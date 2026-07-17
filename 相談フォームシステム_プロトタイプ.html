@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+<title>債務整理 相談フォームシステム（プロトタイプ）</title>
+<style>
+  :root{
+    --navy:#1a3c6e;
+    --navy-dark:#122a4d;
+    --accent:#1f8a70;
+    --accent-dark:#166c57;
+    --bg:#f2f5f9;
+    --card:#ffffff;
+    --text:#233240;
+    --muted:#6b7a89;
+    --border:#dbe3ec;
+    --danger:#c0392b;
+    --danger-bg:#fdecea;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Yu Gothic","游ゴシック","Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.75;
+    -webkit-text-size-adjust:100%;
+  }
+  .app{
+    max-width:760px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--bg);
+  }
+  header.topbar{
+    background:var(--navy);
+    color:#fff;
+    padding:16px 20px;
+    text-align:center;
+  }
+  header.topbar h1{
+    margin:0;
+    font-size:1.05rem;
+    font-weight:600;
+    letter-spacing:.02em;
+  }
+  header.topbar .subtitle{
+    font-size:.78rem;
+    opacity:.85;
+    margin-top:4px;
+  }
+
+  /* progress bar */
+  .progress-wrap{
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    padding:10px 16px 12px;
+  }
+  .progress-track{
+    width:100%;
+    height:6px;
+    background:#e3e9f0;
+    border-radius:6px;
+    overflow:hidden;
+    margin-bottom:10px;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--accent);
+    transition:width .25s ease;
+  }
+  .stepper{
+    display:flex;
+    justify-content:space-between;
+    gap:4px;
+  }
+  .stepper .dot-wrap{
+    flex:1;
+    text-align:center;
+    font-size:.65rem;
+    color:var(--muted);
+  }
+  .stepper .dot{
+    width:24px;height:24px;border-radius:50%;
+    background:#e3e9f0;
+    color:var(--muted);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 4px;
+    font-size:.7rem;
+    font-weight:700;
+    border:2px solid #e3e9f0;
+    transition:all .2s;
+  }
+  .stepper .dot-wrap.active .dot{
+    background:var(--navy);
+    border-color:var(--navy);
+    color:#fff;
+  }
+  .stepper .dot-wrap.done .dot{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  .stepper .dot-wrap.active{ color:var(--navy); font-weight:700; }
+
+  main{
+    flex:1;
+    padding:22px 18px 60px;
+  }
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:24px 22px;
+    box-shadow:0 2px 10px rgba(20,40,70,.06);
+    border:1px solid var(--border);
+    margin-bottom:18px;
+  }
+  h2.screen-title{
+    font-size:1.2rem;
+    color:var(--navy);
+    margin:0 0 6px;
+  }
+  p.screen-desc{
+    color:var(--muted);
+    font-size:.85rem;
+    margin:0 0 20px;
+  }
+
+  /* form elements */
+  .form-group{ margin-bottom:20px; }
+  .field-label{
+    display:block;
+    font-weight:700;
+    margin-bottom:8px;
+    font-size:.92rem;
+  }
+  .field-label .req{
+    color:var(--danger);
+    font-weight:700;
+    margin-left:4px;
+    font-size:.8rem;
+  }
+  .field-hint{
+    font-size:.78rem;
+    color:var(--muted);
+    margin:-4px 0 8px;
+  }
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="date"],
+  input[type="number"],
+  select,
+  textarea{
+    width:100%;
+    padding:12px 14px;
+    font-size:1rem;
+    border:2px solid var(--border);
+    border-radius:10px;
+    outline:none;
+    background:#fbfcfe;
+    font-family:inherit;
+    color:var(--text);
+  }
+  textarea{ resize:vertical; min-height:70px; }
+  input:focus, select:focus, textarea:focus{ border-color:var(--navy); }
+  input.field-invalid, select.field-invalid, textarea.field-invalid{ border-color:var(--danger); background:var(--danger-bg); }
+
+  .field-error{
+    color:var(--danger);
+    font-size:.8rem;
+    margin-top:6px;
+    display:none;
+  }
+  .field-error.show{ display:block; }
+
+  .radio-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .radio-pill{
+    border:2px solid var(--border);
+    border-radius:24px;
+    padding:9px 16px;
+    font-size:.88rem;
+    cursor:pointer;
+    background:#fbfcfe;
+    transition:border-color .15s, background .15s, color .15s;
+    user-select:none;
+  }
+  .radio-pill input{ display:none; }
+  .radio-pill.selected{
+    border-color:var(--navy);
+    background:var(--navy);
+    color:#fff;
+    font-weight:700;
+  }
+
+  .checkbox-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    background:#f6f9fc;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:13px 14px;
+    margin-bottom:10px;
+    cursor:pointer;
+    font-size:.86rem;
+  }
+  .checkbox-row input[type="checkbox"]{
+    width:20px;height:20px;
+    flex-shrink:0;
+    margin-top:1px;
+    accent-color:var(--accent);
+  }
+  .checkbox-row.invalid{ border-color:var(--danger); background:var(--danger-bg); }
+
+  fieldset.subfield-box{
+    border:1px dashed var(--border);
+    border-radius:10px;
+    padding:14px 14px 4px;
+    margin:6px 0 20px;
+    background:#f9fbfd;
+  }
+  fieldset.subfield-box legend{
+    font-size:.8rem;
+    color:var(--navy);
+    font-weight:700;
+    padding:0 6px;
+  }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:15px 24px;
+    font-size:1rem;
+    font-weight:700;
+    border-radius:10px;
+    border:none;
+    cursor:pointer;
+    min-height:52px;
+    transition:transform .05s, background .15s, opacity .15s;
+    width:100%;
+  }
+  .btn:active{ transform:scale(.98); }
+  .btn-primary{ background:var(--navy); color:#fff; }
+  .btn-primary:hover{ background:var(--navy-dark); }
+  .btn-accent{ background:var(--accent); color:#fff; }
+  .btn-accent:hover{ background:var(--accent-dark); }
+  .btn:disabled{
+    background:#c7d0da !important;
+    color:#8b98a5 !important;
+    cursor:not-allowed;
+  }
+  .btn-outline{
+    background:#fff;
+    color:var(--navy);
+    border:2px solid var(--navy);
+  }
+  .btn-danger-outline{
+    background:#fff;
+    color:var(--danger);
+    border:2px solid var(--danger);
+    padding:8px 14px;
+    min-height:auto;
+    font-size:.8rem;
+    width:auto;
+  }
+  .btn-row{
+    display:flex;
+    gap:10px;
+    margin-top:6px;
+  }
+  .btn-row .btn{ flex:1; }
+  .btn-link{
+    display:block;
+    text-align:center;
+    color:var(--muted);
+    font-size:.82rem;
+    text-decoration:underline;
+    background:none;
+    border:none;
+    cursor:pointer;
+    margin:14px auto 0;
+    padding:6px;
+  }
+  .btn-link:hover{ color:var(--navy); }
+
+  /* creditor list */
+  .creditor-card{
+    background:#f6f9fc;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:12px;
+  }
+  .creditor-card .creditor-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .creditor-card .creditor-name{
+    font-weight:700;
+    color:var(--navy);
+    font-size:.95rem;
+  }
+  .creditor-card .creditor-detail{
+    font-size:.82rem;
+    color:var(--text);
+    margin:2px 0;
+  }
+  .creditor-card .creditor-detail span.k{ color:var(--muted); }
+
+  .skip-box{
+    background:#eaf1fb;
+    border:1px solid #c9dbf2;
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:20px;
+    text-align:center;
+  }
+  .skip-box p{ margin:0 0 10px; font-size:.85rem; color:var(--text); }
+
+  /* dynamic rows (income others / expense extra) */
+  .dynamic-row{
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    margin-bottom:10px;
+  }
+  .dynamic-row .dr-field{ flex:1; }
+  .dynamic-row .dr-remove{
+    flex-shrink:0;
+    background:#fff;
+    border:2px solid var(--border);
+    color:var(--danger);
+    border-radius:10px;
+    width:46px;
+    height:46px;
+    font-size:1.1rem;
+    cursor:pointer;
+    margin-top:2px;
+  }
+  .add-row-btn{
+    background:#fff;
+    border:2px dashed var(--navy);
+    color:var(--navy);
+    border-radius:10px;
+    padding:10px;
+    width:100%;
+    font-weight:700;
+    font-size:.88rem;
+    cursor:pointer;
+    margin-top:2px;
+  }
+  .add-row-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  h3.section-sub{
+    font-size:.95rem;
+    color:var(--navy);
+    margin:24px 0 12px;
+    padding-bottom:6px;
+    border-bottom:2px solid var(--border);
+  }
+  h3.section-sub:first-child{ margin-top:0; }
+
+  /* confirm screen */
+  .confirm-block{
+    background:#f6f9fc;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .confirm-block h3{
+    margin:0 0 10px;
+    font-size:.9rem;
+    color:var(--navy);
+  }
+  .confirm-row{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-size:.85rem;
+    padding:6px 0;
+    border-bottom:1px dashed var(--border);
+  }
+  .confirm-row:last-child{ border-bottom:none; }
+  .confirm-row .ck{ color:var(--muted); flex-shrink:0; }
+  .confirm-row .cv{ text-align:right; word-break:break-all; }
+
+  .complete-hero{
+    text-align:center;
+    padding:10px 0 6px;
+  }
+  .complete-hero .complete-icon{
+    width:64px;height:64px;
+    color:var(--accent);
+    margin-bottom:8px;
+  }
+  .complete-hero h2{
+    color:var(--navy);
+    margin:0 0 4px;
+  }
+  .complete-hero .complete-time{
+    font-size:.85rem;
+    color:var(--muted);
+  }
+
+  .send-error{
+    background:var(--danger-bg);
+    border:1px solid #f0c4c0;
+    color:var(--danger);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:.85rem;
+    margin-bottom:14px;
+    display:none;
+  }
+  .send-error.show{ display:block; }
+
+  footer.appfooter{
+    text-align:center;
+    font-size:.7rem;
+    color:var(--muted);
+    padding:14px;
+  }
+
+  @media (max-width:480px){
+    .card{ padding:18px 16px; }
+    .confirm-row{ flex-direction:column; gap:2px; }
+    .confirm-row .cv{ text-align:left; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <h1>債務整理 事前相談フォーム（プロトタイプ）</h1>
+    <div class="subtitle">司法書士事務所 面談前ヒアリングシステム</div>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="stepper" id="stepper">
+      <div class="dot-wrap" data-step="1"><div class="dot">1</div>基本情報</div>
+      <div class="dot-wrap" data-step="2"><div class="dot">2</div>債権者</div>
+      <div class="dot-wrap" data-step="3"><div class="dot">3</div>勤務先</div>
+      <div class="dot-wrap" data-step="4"><div class="dot">4</div>収支</div>
+      <div class="dot-wrap" data-step="5"><div class="dot">5</div>確認</div>
+      <div class="dot-wrap" data-step="6"><div class="dot">6</div>完了</div>
+    </div>
+  </div>
+
+  <main id="stepContainer">
+    <!-- 各STEPの内容はJavaScriptで動的に描画されます -->
+  </main>
+
+  <footer class="appfooter">
+    プロトタイプ版｜入力内容は端末内（localStorage）に一時保存されます
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   設定エリア（送信先はここだけ変更すればOK）
+   ============================================================ */
+// Formspree のフォームエンドポイント（Formspreeダッシュボードで発行されたURLに差し替える）
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/xykreevd";
+// 受信先メールアドレス（お名前.comで取得した独自ドメインのメール等。実際の配送先はFormspree側のフォーム設定に紐づくが、
+// EmailJS+SMTPへ切り替えた際にはこの定数がそのまま送信先として使われる）
+const MAIL_TO = "info@example-office.com";
+// localStorage保存キー
+const STORAGE_KEY = "debtConsultFormV1";
+
+/* ============================================================
+   質問データ定義（STEP1・STEP3はここに項目を追加/変更するだけでフォームに反映される）
+   ============================================================ */
+// 氏名以外はすべて任意入力（未入力でも次のステップ・送信に進める）
+const STEP1_FIELDS = [
+  { id:"name", label:"氏名", type:"text", required:true, placeholder:"例）法務 太郎" },
+  { id:"birthdate", label:"生年月日", type:"date", required:false },
+  { id:"zip", label:"郵便番号", type:"text", required:false, placeholder:"例）123-4567" },
+  { id:"address1", label:"住所１（番地まで）", type:"text", required:false },
+  { id:"address2", label:"住所２（建物名・号室など）", type:"text", required:false },
+  { id:"tel", label:"電話番号", type:"tel", required:false, placeholder:"例）090-1234-5678" },
+  { id:"email", label:"メールアドレス", type:"email", required:false },
+  { id:"familySecret", label:"借入について秘密にしている同居家族はいますか", type:"radio",
+    options:["内緒","単身","承知","その他"], required:false, branch:true },
+  { id:"mailOk", label:"事務所から自宅への郵便物の可否", type:"radio",
+    options:["OK","個人名なら可","NG"], required:false },
+  { id:"contactTime", label:"連絡しやすい曜日・時間帯", type:"text", required:false, placeholder:"例）平日18時以降、土曜日終日" },
+  { id:"monthlyBudget", label:"収入から月々の支払に回せる上限額（円）", type:"number", required:false, placeholder:"例）30000" },
+  { id:"pastDebtHistory", label:"過去に債務整理の経験はありますか", type:"radio",
+    options:["ある","ない"], required:false, branch:true },
+  { id:"pastDebtYears", label:"それは何年前ですか", type:"text", required:false, placeholder:"例）5年前",
+    showIf:(d)=> d.pastDebtHistory === "ある" },
+  { id:"pastDebtType", label:"その際に行った手続き", type:"radio",
+    options:["任意整理","自己破産","個人再生"], required:false,
+    showIf:(d)=> d.pastDebtHistory === "ある" }
+];
+
+const STEP3_FIELDS = [
+  { id:"employmentType", label:"雇用形態", type:"radio",
+    options:["正社員","派遣社員","パート"], required:false, branch:true },
+  { id:"dispatchAgency", label:"派遣元", type:"text", required:false,
+    showIf:(d)=> d.employmentType === "派遣社員" },
+  { id:"dispatchDestination", label:"派遣先", type:"text", required:false,
+    showIf:(d)=> d.employmentType === "派遣社員" },
+  { id:"companyName", label:"勤務先名", type:"text", required:false,
+    showIf:(d)=> d.employmentType !== "派遣社員" },
+  { id:"companyAddress", label:"勤務先住所", type:"text", required:false },
+  { id:"companyTel", label:"勤務先電話番号", type:"tel", required:false },
+  { id:"companyKnows", label:"業者が既に勤務先を知っているか", type:"radio",
+    options:["知っている","知らない"], required:false }
+];
+
+const CREDITOR_NAME_OPTIONS = [
+  "プロミス","アコム","アイフル","SMBCモビット","レイクALSA","楽天カード","三井住友カード",
+  "JCB","オリエントコーポレーション","ジャックス","三菱UFJ銀行","三井住友銀行","みずほ銀行",
+  "ゆうちょ銀行","日本学生支援機構","その他"
+];
+const CREDITOR_YEARS_OPTIONS = ["不明","6か月未満","1年未満","1年","1年半","2年","3年","4年以上"];
+
+/* ============================================================
+   状態管理
+   ============================================================ */
+function newCreditorDraft(){
+  return { name:"", nameOther:"", loanAmount:"", years:"", overdue:"", lawsuit:"" };
+}
+
+// 自動車ローン・住宅ローンは特定の債権者に紐づく質問ではなく、債権者を全件入力し終えた後にまとめて一度だけ聞く項目
+function newLoanInfo(){
+  return {
+    carLoan:"", carLoanCompany:"", carLoanGuarantee:"", carLoanCosigner:"", carLoanRelation:"", carLoanBalance:"",
+    houseLoan:"", houseLoanBank:"", houseLoanCosigner:"", houseLoanRelation:"", houseLoanCardLoan:""
+  };
+}
+
+function newState(){
+  return {
+    currentStep: 1,
+    basic: { name:"", birthdate:"", zip:"", address1:"", address2:"", tel:"", email:"",
+      familySecret:"", mailOk:"", contactTime:"", monthlyBudget:"",
+      pastDebtHistory:"", pastDebtYears:"", pastDebtType:"" },
+    creditors: [],
+    creditorDraft: newCreditorDraft(),
+    creditorsSkipped: false,
+    creditorPhase: "list", // "list"：債権者の入力/一覧、"loans"：自動車・住宅ローンのまとめ質問
+    loanInfo: newLoanInfo(),
+    employment: { employmentType:"", companyName:"", dispatchAgency:"", dispatchDestination:"",
+      companyAddress:"", companyTel:"", companyKnows:"" },
+    income: { household:"", selfIncome:"", spouseIncome:"", pensionAmount:"", others:[] },
+    expense: { rent:"", food:"", tuition:"", extra:[] },
+    submittedAt: null
+  };
+}
+
+let state = newState();
+
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ /* 保存できなくても致命的ではないため無視 */ }
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    const base = newState();
+    state = Object.assign(base, saved, {
+      basic: Object.assign(base.basic, saved.basic),
+      creditorDraft: Object.assign(base.creditorDraft, saved.creditorDraft),
+      loanInfo: Object.assign(base.loanInfo, saved.loanInfo),
+      employment: Object.assign(base.employment, saved.employment),
+      income: Object.assign(base.income, saved.income),
+      expense: Object.assign(base.expense, saved.expense),
+      creditors: Array.isArray(saved.creditors) ? saved.creditors : []
+    });
+    if(state.submittedAt){ state.currentStep = 6; } // 送信完了後のリロードは完了画面を維持
+  }catch(e){ state = newState(); }
+}
+
+/* ============================================================
+   共通ヘルパー
+   ============================================================ */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function getPath(obj, path){ return path.split(".").reduce((o,k)=> (o? o[k] : undefined), obj); }
+function setPath(obj, path, val){
+  const parts = path.split(".");
+  let o = obj;
+  for(let i=0;i<parts.length-1;i++) o = o[parts[i]];
+  o[parts[parts.length-1]] = val;
+}
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function formatDateTime(d){
+  const pad = n => String(n).padStart(2,"0");
+  return d.getFullYear()+"年"+pad(d.getMonth()+1)+"月"+pad(d.getDate())+"日 "
+    + pad(d.getHours())+":"+pad(d.getMinutes());
+}
+
+function updateProgressUI(){
+  const step = Math.min(state.currentStep, 6);
+  $("progressFill").style.width = (Math.min(step,5)/5*100) + "%";
+  document.querySelectorAll(".stepper .dot-wrap").forEach(el=>{
+    const s = parseInt(el.dataset.step,10);
+    el.classList.toggle("active", s===step);
+    el.classList.toggle("done", s<step);
+  });
+}
+
+/* ============================================================
+   汎用フィールド描画（STEP1・STEP3で共用）
+   ============================================================ */
+function renderGenericField(field, dataObj){
+  if(field.showIf && !field.showIf(dataObj)) return "";
+  const val = dataObj[field.id] || "";
+  const reqMark = field.required ? '<span class="req">必須</span>' : "";
+  let inputHtml = "";
+
+  if(field.type === "radio"){
+    inputHtml = '<div class="radio-group" data-field="'+field.id+'">' +
+      field.options.map(opt=>{
+        const selected = val === opt ? " selected" : "";
+        return '<label class="radio-pill'+selected+'"><input type="radio" name="'+field.id+'" value="'+esc(opt)+'" '+(val===opt?"checked":"")+'>'+esc(opt)+'</label>';
+      }).join("") + '</div>';
+  } else if(field.type === "textarea"){
+    inputHtml = '<textarea data-field="'+field.id+'" placeholder="'+esc(field.placeholder||"")+'">'+esc(val)+'</textarea>';
+  } else {
+    inputHtml = '<input type="'+field.type+'" data-field="'+field.id+'" value="'+esc(val)+'" placeholder="'+esc(field.placeholder||"")+'">';
+  }
+
+  return '<div class="form-group" data-field-group="'+field.id+'">' +
+    '<label class="field-label">'+esc(field.label)+reqMark+'</label>' +
+    inputHtml +
+    '<div class="field-error" id="err-'+field.id+'"></div>' +
+    '</div>';
+}
+
+// 表示中の項目のうち必須未入力があればエラーを表示し、trueなら妥当
+function validateGenericFields(fields, dataObj, containerEl){
+  let valid = true;
+  fields.forEach(field=>{
+    const errEl = containerEl.querySelector("#err-"+field.id);
+    if(!errEl) return; // showIfで非表示の項目はスキップ
+    const visible = !field.showIf || field.showIf(dataObj);
+    const val = dataObj[field.id];
+    const empty = val === undefined || val === null || String(val).trim() === "";
+    let bad = visible && field.required && empty;
+    if(!bad && visible && field.type === "email" && !empty && !EMAIL_RE.test(val)){
+      bad = true;
+      errEl.textContent = "メールアドレスの形式が正しくありません";
+    } else if(bad){
+      errEl.textContent = "この項目は必須です";
+    }
+    errEl.classList.toggle("show", !!bad);
+    const inputEl = containerEl.querySelector('[data-field="'+field.id+'"]');
+    if(inputEl) inputEl.classList.toggle("field-invalid", !!bad);
+    const groupEl = containerEl.querySelector('.radio-group[data-field="'+field.id+'"]');
+    if(groupEl) groupEl.classList.toggle("field-invalid", !!bad);
+    if(bad) valid = false;
+  });
+  return valid;
+}
+
+// data-field属性を持つ入力欄にイベントを紐付ける（branch指定のradio/selectは変更時に再描画）
+function bindGenericFields(fields, dataObj, containerEl, rerenderFn){
+  containerEl.querySelectorAll("input[data-field], textarea[data-field]").forEach(el=>{
+    el.addEventListener("input", ()=>{
+      dataObj[el.dataset.field] = el.value;
+      saveState();
+    });
+  });
+  containerEl.querySelectorAll(".radio-group[data-field]").forEach(group=>{
+    const fieldId = group.dataset.field;
+    const fieldDef = fields.find(f=>f.id===fieldId);
+    group.querySelectorAll('input[type="radio"]').forEach(radio=>{
+      radio.addEventListener("change", ()=>{
+        dataObj[fieldId] = radio.value;
+        saveState();
+        if(fieldDef && fieldDef.branch && rerenderFn){ rerenderFn(); }
+        else {
+          group.querySelectorAll(".radio-pill").forEach(p=>p.classList.remove("selected"));
+          radio.closest(".radio-pill").classList.add("selected");
+        }
+      });
+    });
+  });
+}
+
+/* ============================================================
+   ナビゲーション
+   ============================================================ */
+function goToStep(n){
+  state.currentStep = n;
+  saveState();
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function render(){
+  updateProgressUI();
+  const map = { 1:renderStep1, 2:renderStep2, 3:renderStep3, 4:renderStep4, 5:renderStep5, 6:renderComplete };
+  (map[state.currentStep] || renderStep1)();
+}
+
+function earlySubmitLink(){
+  return '<button type="button" class="btn-link" id="earlySubmitBtn">ここまでの入力内容で確認画面に進む（未入力の項目があっても進めます）</button>';
+}
+
+/* ============================================================
+   STEP1：基本情報
+   ============================================================ */
+function renderStep1(){
+  const c = $("stepContainer");
+  c.innerHTML =
+    '<section class="card">' +
+    '<h2 class="screen-title">STEP1：基本情報</h2>' +
+    '<p class="screen-desc">まずはご相談者様ご自身の情報をご入力ください。<span class="req">必須</span>の項目は入力が必要です。</p>' +
+    '<div id="step1Fields"></div>' +
+    '<div class="btn-row"><button class="btn btn-primary" id="step1NextBtn">次へ進む</button></div>' +
+    '</section>';
+
+  const fieldsWrap = $("step1Fields");
+  fieldsWrap.innerHTML = STEP1_FIELDS.map(f=>renderGenericField(f, state.basic)).join("");
+  bindGenericFields(STEP1_FIELDS, state.basic, fieldsWrap, renderStep1);
+
+  $("step1NextBtn").addEventListener("click", ()=>{
+    if(validateGenericFields(STEP1_FIELDS, state.basic, fieldsWrap)){
+      goToStep(2);
+    } else {
+      fieldsWrap.querySelector(".field-error.show")?.closest(".form-group")?.scrollIntoView({behavior:"smooth", block:"center"});
+    }
+  });
+}
+
+/* ============================================================
+   STEP2：債権者の届出
+   ============================================================ */
+// 汎用の「キー付き」フィールドHTML生成（債権者フォーム・自動車/住宅ローンフォームで共用。
+// fieldKeyは "cd-xxx"（債権者）や "li-xxx"（ローン情報）のようにプレフィックス付きで渡す）
+function keyedSelectHtml(fieldKey, label, options, val, required){
+  const reqMark = required ? '<span class="req">必須</span>' : "";
+  return '<div class="form-group"><label class="field-label">'+esc(label)+reqMark+'</label>' +
+    '<select data-key="'+fieldKey+'"><option value="">選択してください</option>' +
+    options.map(o=>'<option value="'+esc(o)+'" '+(val===o?"selected":"")+'>'+esc(o)+'</option>').join("") +
+    '</select><div class="field-error" id="err-'+fieldKey+'"></div></div>';
+}
+function keyedTextHtml(fieldKey, label, val, required, type, placeholder){
+  const reqMark = required ? '<span class="req">必須</span>' : "";
+  return '<div class="form-group"><label class="field-label">'+esc(label)+reqMark+'</label>' +
+    '<input type="'+(type||"text")+'" data-key="'+fieldKey+'" value="'+esc(val)+'" placeholder="'+esc(placeholder||"")+'">' +
+    '<div class="field-error" id="err-'+fieldKey+'"></div></div>';
+}
+function keyedRadioHtml(fieldKey, label, options, val, required){
+  const reqMark = required ? '<span class="req">必須</span>' : "";
+  return '<div class="form-group"><label class="field-label">'+esc(label)+reqMark+'</label>' +
+    '<div class="radio-group" data-key="'+fieldKey+'">' +
+    options.map(opt=>{
+      const selected = val === opt ? " selected" : "";
+      return '<label class="radio-pill'+selected+'"><input type="radio" name="'+fieldKey+'" value="'+esc(opt)+'" '+(val===opt?"checked":"")+'>'+esc(opt)+'</label>';
+    }).join("") + '</div>' +
+    '<div class="field-error" id="err-'+fieldKey+'"></div></div>';
+}
+
+// prefix（"cd-"や"li-"）に一致するキー付き要素へイベントを紐付ける。select/radioは変更時に再描画（分岐項目のため）
+function bindKeyedForm(container, prefix, dataObj, rerenderFn){
+  container.querySelectorAll("select[data-key], input[data-key], textarea[data-key]").forEach(el=>{
+    const fullKey = el.dataset.key;
+    if(!fullKey.startsWith(prefix)) return;
+    const key = fullKey.slice(prefix.length);
+    if(el.tagName === "SELECT"){
+      el.addEventListener("change", ()=>{ dataObj[key] = el.value; saveState(); rerenderFn && rerenderFn(); });
+    } else {
+      el.addEventListener("input", ()=>{ dataObj[key] = el.value; saveState(); });
+    }
+  });
+  container.querySelectorAll(".radio-group[data-key]").forEach(group=>{
+    const fullKey = group.dataset.key;
+    if(!fullKey.startsWith(prefix)) return;
+    const key = fullKey.slice(prefix.length);
+    group.querySelectorAll('input[type="radio"]').forEach(radio=>{
+      radio.addEventListener("change", ()=>{
+        dataObj[key] = radio.value;
+        saveState();
+        rerenderFn && rerenderFn();
+      });
+    });
+  });
+}
+
+// rules: [{key, required, when:(dataObj)=>bool}] 形式で必須チェックを行う
+function validateKeyedFields(container, prefix, dataObj, rules){
+  let valid = true;
+  rules.forEach(rule=>{
+    const fullKey = prefix + rule.key;
+    const applicable = !rule.when || rule.when(dataObj);
+    const val = dataObj[rule.key];
+    const empty = val === undefined || val === null || String(val).trim() === "";
+    const bad = applicable && rule.required && empty;
+    const errEl = container.querySelector("#err-"+fullKey);
+    if(errEl){ errEl.textContent = "この項目は必須です"; errEl.classList.toggle("show", bad); }
+    const inputEl = container.querySelector('select[data-key="'+fullKey+'"], input[data-key="'+fullKey+'"], textarea[data-key="'+fullKey+'"]');
+    if(inputEl) inputEl.classList.toggle("field-invalid", bad);
+    const groupEl = container.querySelector('.radio-group[data-key="'+fullKey+'"]');
+    if(groupEl) groupEl.classList.toggle("field-invalid", bad);
+    if(bad) valid = false;
+  });
+  return valid;
+}
+
+function creditorSummaryHtml(cr, idx){
+  const name = cr.name === "その他" ? (cr.nameOther || "その他") : cr.name;
+  return '<div class="creditor-card" data-idx="'+idx+'">' +
+    '<div class="creditor-head"><span class="creditor-name">'+(idx+1)+'. '+esc(name)+'</span>' +
+    '<button type="button" class="btn-danger-outline" data-remove-creditor="'+idx+'">削除</button></div>' +
+    '<div class="creditor-detail"><span class="k">借入額：</span>'+esc(cr.loanAmount)+' 万円　<span class="k">取引年数：</span>'+esc(cr.years)+'</div>' +
+    '<div class="creditor-detail"><span class="k">延滞中：</span>'+esc(cr.overdue)+'　<span class="k">訴訟：</span>'+esc(cr.lawsuit)+'</div>' +
+    '</div>';
+}
+
+function renderCreditorDraftForm(){
+  const d = state.creditorDraft;
+  const nameIsOther = d.name === "その他";
+  let html = '<h3 class="section-sub">債権者情報を入力</h3>';
+  html += keyedSelectHtml("cd-name","債権者名",CREDITOR_NAME_OPTIONS,d.name,false);
+  if(nameIsOther){
+    html += keyedTextHtml("cd-nameOther","債権者名（自由入力）",d.nameOther,false,"text","例）〇〇信用金庫");
+  }
+  html += keyedTextHtml("cd-loanAmount","借入額（万円）",d.loanAmount,false,"number","例）50");
+  html += keyedSelectHtml("cd-years","取引年数",CREDITOR_YEARS_OPTIONS,d.years,false);
+  html += keyedRadioHtml("cd-overdue","延滞中かどうか",["あり","なし"],d.overdue,false);
+  html += keyedRadioHtml("cd-lawsuit","裁判されているかどうか",["あり","なし"],d.lawsuit,false);
+  html += '<button type="button" class="btn btn-accent" id="addCreditorBtn">この債権者を追加する</button>';
+  return html;
+}
+
+function bindCreditorDraftForm(container){
+  bindKeyedForm(container, "cd-", state.creditorDraft, renderStep2);
+}
+
+function validateCreditorDraft(container){
+  return validateKeyedFields(container, "cd-", state.creditorDraft, [
+    { key:"name", required:false },
+    { key:"nameOther", required:false, when:d=> d.name === "その他" },
+    { key:"loanAmount", required:false },
+    { key:"years", required:false },
+    { key:"overdue", required:false },
+    { key:"lawsuit", required:false }
+  ]);
+}
+
+// 自動車ローン・住宅ローンは債権者ごとではなく、全債権者の入力が終わった後にまとめて一度だけ質問する
+function renderLoanInfoForm(){
+  const d = state.loanInfo;
+  let html = '<h3 class="section-sub">自動車ローン・住宅ローンについて</h3>' +
+    '<p class="field-hint">個別の債権者としてではなく、まとめて一度だけご回答ください。</p>';
+
+  html += keyedRadioHtml("li-carLoan","自動車ローンの有無",["あり","なし"],d.carLoan,false);
+  if(d.carLoan === "あり"){
+    html += '<fieldset class="subfield-box"><legend>自動車ローンの詳細</legend>';
+    html += keyedTextHtml("li-carLoanCompany","ローン会社",d.carLoanCompany,false);
+    html += keyedTextHtml("li-carLoanGuarantee","保証会社",d.carLoanGuarantee,false);
+    html += keyedRadioHtml("li-carLoanCosigner","連帯保証人の有無",["あり","なし"],d.carLoanCosigner,false);
+    if(d.carLoanCosigner === "あり"){
+      html += keyedTextHtml("li-carLoanRelation","連帯保証人の続柄",d.carLoanRelation,false);
+    }
+    html += keyedTextHtml("li-carLoanBalance","残高（万円）",d.carLoanBalance,false,"number");
+    html += '</fieldset>';
+  }
+
+  html += keyedRadioHtml("li-houseLoan","住宅ローンの有無",["あり","なし"],d.houseLoan,false);
+  if(d.houseLoan === "あり"){
+    html += '<fieldset class="subfield-box"><legend>住宅ローンの詳細</legend>';
+    html += keyedTextHtml("li-houseLoanBank","銀行名",d.houseLoanBank,false);
+    html += keyedRadioHtml("li-houseLoanCosigner","連帯保証人の有無",["あり","なし"],d.houseLoanCosigner,false);
+    if(d.houseLoanCosigner === "あり"){
+      html += keyedTextHtml("li-houseLoanRelation","連帯保証人の続柄",d.houseLoanRelation,false);
+    }
+    html += keyedRadioHtml("li-houseLoanCardLoan","併用カードローンの有無",["あり","なし"],d.houseLoanCardLoan,false);
+    html += '</fieldset>';
+  }
+  return html;
+}
+
+function bindLoanInfoForm(container){
+  bindKeyedForm(container, "li-", state.loanInfo, renderStep2);
+}
+
+function validateLoanInfo(container){
+  return validateKeyedFields(container, "li-", state.loanInfo, [
+    { key:"carLoan", required:false },
+    { key:"carLoanCompany", required:false, when:d=> d.carLoan === "あり" },
+    { key:"carLoanGuarantee", required:false, when:d=> d.carLoan === "あり" },
+    { key:"carLoanCosigner", required:false, when:d=> d.carLoan === "あり" },
+    { key:"carLoanRelation", required:false, when:d=> d.carLoan === "あり" && d.carLoanCosigner === "あり" },
+    { key:"carLoanBalance", required:false, when:d=> d.carLoan === "あり" },
+    { key:"houseLoan", required:false },
+    { key:"houseLoanBank", required:false, when:d=> d.houseLoan === "あり" },
+    { key:"houseLoanCosigner", required:false, when:d=> d.houseLoan === "あり" },
+    { key:"houseLoanRelation", required:false, when:d=> d.houseLoan === "あり" && d.houseLoanCosigner === "あり" },
+    { key:"houseLoanCardLoan", required:false, when:d=> d.houseLoan === "あり" }
+  ]);
+}
+
+function renderStep2(){
+  if(state.creditorPhase === "loans"){ renderStep2Loans(); }
+  else { renderStep2List(); }
+}
+
+// STEP2 前半：債権者の個別入力・一覧
+function renderStep2List(){
+  const c = $("stepContainer");
+  let html = '<section class="card">' +
+    '<h2 class="screen-title">STEP2：債権者の届出</h2>' +
+    '<p class="screen-desc">お借入れのある業者について、分かる範囲でご入力ください。既に届出済みの場合はスキップできます。</p>';
+
+  if(!state.creditorsSkipped){
+    html += '<div class="skip-box"><p>すでにLINEやメールでこちらに詳細を届出頂いている場合は、こちらのボタンでスキップしていただいて結構です。</p>' +
+      '<button type="button" class="btn btn-outline" id="skipCreditorBtn">届出済みのため入力をスキップする</button></div>';
+  } else {
+    html += '<div class="skip-box"><p>「届出済み」としてスキップ中です</p>' +
+      '<button type="button" class="btn btn-outline" id="unskipCreditorBtn">入力に戻る</button></div>';
+  }
+
+  if(!state.creditorsSkipped){
+    if(state.creditors.length){
+      html += '<h3 class="section-sub">入力済みの債権者（'+state.creditors.length+'件）</h3>';
+      state.creditors.forEach((cr,idx)=>{ html += creditorSummaryHtml(cr, idx); });
+    }
+    html += renderCreditorDraftForm();
+  }
+
+  html += '<div class="btn-row"><button class="btn btn-outline" id="step2BackBtn">戻る</button>' +
+    '<button class="btn btn-primary" id="step2NextBtn">次へ進む</button></div>' +
+    earlySubmitLink() +
+    '</section>';
+
+  c.innerHTML = html;
+
+  if(!state.creditorsSkipped){
+    bindCreditorDraftForm(c);
+    $("addCreditorBtn")?.addEventListener("click", ()=>{
+      if(validateCreditorDraft(c)){
+        state.creditors.push(JSON.parse(JSON.stringify(state.creditorDraft)));
+        state.creditorDraft = newCreditorDraft();
+        saveState();
+        renderStep2();
+      }
+    });
+    c.querySelectorAll("[data-remove-creditor]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        state.creditors.splice(parseInt(btn.dataset.removeCreditor,10),1);
+        saveState();
+        renderStep2();
+      });
+    });
+    $("skipCreditorBtn")?.addEventListener("click", ()=>{
+      state.creditorsSkipped = true; saveState(); renderStep2();
+    });
+  } else {
+    $("unskipCreditorBtn").addEventListener("click", ()=>{
+      state.creditorsSkipped = false; saveState(); renderStep2();
+    });
+  }
+
+  $("step2BackBtn").addEventListener("click", ()=> goToStep(1));
+  $("step2NextBtn").addEventListener("click", ()=>{
+    state.creditorPhase = "loans";
+    saveState();
+    renderStep2();
+    window.scrollTo({top:0, behavior:"smooth"});
+  });
+  $("earlySubmitBtn")?.addEventListener("click", ()=> goToStep(5));
+}
+
+// STEP2 後半：自動車ローン・住宅ローン（全債権者の入力後にまとめて一度だけ質問）
+function renderStep2Loans(){
+  const c = $("stepContainer");
+  c.innerHTML = '<section class="card">' +
+    '<h2 class="screen-title">STEP2：債権者の届出</h2>' +
+    '<p class="screen-desc">最後に、自動車ローン・住宅ローンについてお伺いします。</p>' +
+    '<div id="loanInfoFields">'+renderLoanInfoForm()+'</div>' +
+    '<div class="btn-row"><button class="btn btn-outline" id="step2LoansBackBtn">戻る</button>' +
+    '<button class="btn btn-primary" id="step2LoansNextBtn">次へ進む</button></div>' +
+    earlySubmitLink() +
+    '</section>';
+
+  bindLoanInfoForm($("loanInfoFields"));
+
+  $("step2LoansBackBtn").addEventListener("click", ()=>{
+    state.creditorPhase = "list";
+    saveState();
+    renderStep2();
+  });
+  $("step2LoansNextBtn").addEventListener("click", ()=>{
+    if(validateLoanInfo($("loanInfoFields"))){ goToStep(3); }
+  });
+  $("earlySubmitBtn")?.addEventListener("click", ()=> goToStep(5));
+}
+
+/* ============================================================
+   STEP3：雇用状況
+   ============================================================ */
+function renderStep3(){
+  const c = $("stepContainer");
+  c.innerHTML =
+    '<section class="card">' +
+    '<h2 class="screen-title">STEP3：雇用状況</h2>' +
+    '<p class="screen-desc">現在のお勤め先についてご入力ください。</p>' +
+    '<div id="step3Fields"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" id="step3BackBtn">戻る</button>' +
+    '<button class="btn btn-primary" id="step3NextBtn">次へ進む</button></div>' +
+    earlySubmitLink() +
+    '</section>';
+
+  const fieldsWrap = $("step3Fields");
+  fieldsWrap.innerHTML = STEP3_FIELDS.map(f=>renderGenericField(f, state.employment)).join("");
+  bindGenericFields(STEP3_FIELDS, state.employment, fieldsWrap, renderStep3);
+
+  $("step3BackBtn").addEventListener("click", ()=> goToStep(2));
+  $("earlySubmitBtn")?.addEventListener("click", ()=> goToStep(5));
+  $("step3NextBtn").addEventListener("click", ()=>{
+    if(validateGenericFields(STEP3_FIELDS, state.employment, fieldsWrap)){
+      goToStep(4);
+    }
+  });
+}
+
+/* ============================================================
+   STEP4：収支状況（任意入力）
+   ============================================================ */
+const EXPENSE_EXTRA_MAX = 17;
+
+function renderStep4(){
+  const c = $("stepContainer");
+  const inc = state.income;
+  const exp = state.expense;
+
+  let html = '<section class="card">' +
+    '<h2 class="screen-title">STEP4：収支状況</h2>' +
+    '<p class="screen-desc">このSTEPの項目はすべて任意です。分かる範囲でご入力ください。</p>';
+
+  html += '<h3 class="section-sub">収入</h3>';
+  html += '<div class="form-group"><label class="field-label">同居家族の構成</label><input type="text" data-inc="household" value="'+esc(inc.household)+'" placeholder="例）妻・子2人と同居"></div>';
+  html += '<div class="form-group"><label class="field-label">本人の手取り収入額（円）</label><input type="number" data-inc="selfIncome" value="'+esc(inc.selfIncome)+'"></div>';
+  html += '<div class="form-group"><label class="field-label">配偶者の手取り収入額（円）</label><input type="number" data-inc="spouseIncome" value="'+esc(inc.spouseIncome)+'"></div>';
+  html += '<div class="form-group"><label class="field-label">年金・子供手当などの給付額</label>' +
+    '<input type="number" data-inc="pensionAmount" value="'+esc(inc.pensionAmount)+'" placeholder="例）10000">' +
+    '<div class="field-hint">1か月あたりの金額（円）でご記入ください</div></div>';
+
+  html += '<div class="form-group"><label class="field-label">その他の方の収入</label>';
+  inc.others.forEach((row,idx)=>{
+    html += '<div class="dynamic-row" data-other-idx="'+idx+'">' +
+      '<div class="dr-field"><input type="text" data-other-role value="'+esc(row.role)+'" placeholder="立場（例：長男）"></div>' +
+      '<div class="dr-field" style="max-width:140px;"><input type="number" data-other-amount value="'+esc(row.amount)+'" placeholder="手取り額（円）"></div>' +
+      '<button type="button" class="dr-remove" data-remove-other="'+idx+'">×</button></div>';
+  });
+  html += '<button type="button" class="add-row-btn" id="addOtherIncomeBtn">＋ その他の収入を追加</button></div>';
+
+  html += '<h3 class="section-sub">支出</h3>';
+  html += '<div class="form-group"><label class="field-label">家賃もしくは住宅ローン（円）</label><input type="number" data-exp="rent" value="'+esc(exp.rent)+'"></div>';
+  html += '<div class="form-group"><label class="field-label">食費（円）</label><input type="number" data-exp="food" value="'+esc(exp.food)+'"></div>';
+  html += '<div class="form-group"><label class="field-label">学費（円）</label><input type="number" data-exp="tuition" value="'+esc(exp.tuition)+'"></div>';
+
+  html += '<div class="form-group"><label class="field-label">その他の支出項目（最大'+EXPENSE_EXTRA_MAX+'件）</label>';
+  exp.extra.forEach((row,idx)=>{
+    html += '<div class="dynamic-row" data-extra-idx="'+idx+'">' +
+      '<div class="dr-field"><input type="text" data-extra-label value="'+esc(row.label)+'" placeholder="項目名（例：通信費）"></div>' +
+      '<div class="dr-field" style="max-width:140px;"><input type="number" data-extra-amount value="'+esc(row.amount)+'" placeholder="金額（円）"></div>' +
+      '<button type="button" class="dr-remove" data-remove-extra="'+idx+'">×</button></div>';
+  });
+  html += '<button type="button" class="add-row-btn" id="addExpenseExtraBtn" '+(exp.extra.length>=EXPENSE_EXTRA_MAX?"disabled":"")+'>＋ 支出項目を追加（'+exp.extra.length+' / '+EXPENSE_EXTRA_MAX+'）</button></div>';
+
+  html += '<div class="btn-row"><button class="btn btn-outline" id="step4BackBtn">戻る</button>' +
+    '<button class="btn btn-primary" id="step4NextBtn">確認画面へ進む</button></div>' +
+    '</section>';
+
+  c.innerHTML = html;
+
+  c.querySelectorAll("[data-inc]").forEach(el=> el.addEventListener("input", ()=>{ inc[el.dataset.inc] = el.value; saveState(); }));
+  c.querySelectorAll("[data-exp]").forEach(el=> el.addEventListener("input", ()=>{ exp[el.dataset.exp] = el.value; saveState(); }));
+
+  c.querySelectorAll("[data-other-idx]").forEach(row=>{
+    const idx = parseInt(row.dataset.otherIdx,10);
+    row.querySelector("[data-other-role]").addEventListener("input", e=>{ inc.others[idx].role = e.target.value; saveState(); });
+    row.querySelector("[data-other-amount]").addEventListener("input", e=>{ inc.others[idx].amount = e.target.value; saveState(); });
+  });
+  c.querySelectorAll("[data-remove-other]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{ inc.others.splice(parseInt(btn.dataset.removeOther,10),1); saveState(); renderStep4(); });
+  });
+  $("addOtherIncomeBtn").addEventListener("click", ()=>{ inc.others.push({role:"",amount:""}); saveState(); renderStep4(); });
+
+  c.querySelectorAll("[data-extra-idx]").forEach(row=>{
+    const idx = parseInt(row.dataset.extraIdx,10);
+    row.querySelector("[data-extra-label]").addEventListener("input", e=>{ exp.extra[idx].label = e.target.value; saveState(); });
+    row.querySelector("[data-extra-amount]").addEventListener("input", e=>{ exp.extra[idx].amount = e.target.value; saveState(); });
+  });
+  c.querySelectorAll("[data-remove-extra]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{ exp.extra.splice(parseInt(btn.dataset.removeExtra,10),1); saveState(); renderStep4(); });
+  });
+  $("addExpenseExtraBtn").addEventListener("click", ()=>{
+    if(exp.extra.length < EXPENSE_EXTRA_MAX){ exp.extra.push({label:"",amount:""}); saveState(); renderStep4(); }
+  });
+
+  $("step4BackBtn").addEventListener("click", ()=> goToStep(3));
+  $("step4NextBtn").addEventListener("click", ()=> goToStep(5));
+}
+
+/* ============================================================
+   STEP5：確認・送信
+   ============================================================ */
+function confirmRow(label, value){
+  const v = (value===undefined||value===null||String(value).trim()==="") ? "（未入力）" : esc(value);
+  return '<div class="confirm-row"><span class="ck">'+esc(label)+'</span><span class="cv">'+v+'</span></div>';
+}
+
+function buildConfirmHtml(){
+  const b = state.basic, emp = state.employment, inc = state.income, exp = state.expense, loan = state.loanInfo;
+  let html = "";
+
+  html += '<div class="confirm-block"><h3>基本情報</h3>';
+  html += confirmRow("氏名", b.name);
+  html += confirmRow("生年月日", b.birthdate);
+  html += confirmRow("郵便番号", b.zip);
+  html += confirmRow("住所１", b.address1);
+  html += confirmRow("住所２", b.address2);
+  html += confirmRow("電話番号", b.tel);
+  html += confirmRow("メールアドレス", b.email);
+  html += confirmRow("同居家族への秘密の状況", b.familySecret);
+  html += confirmRow("郵便物の可否", b.mailOk);
+  html += confirmRow("連絡しやすい曜日・時間帯", b.contactTime);
+  html += confirmRow("月々の支払上限額", b.monthlyBudget ? b.monthlyBudget+" 円" : "");
+  html += confirmRow("過去の債務整理経験", b.pastDebtHistory);
+  if(b.pastDebtHistory === "ある"){
+    html += confirmRow("何年前", b.pastDebtYears);
+    html += confirmRow("手続きの種類", b.pastDebtType);
+  }
+  html += '</div>';
+
+  html += '<div class="confirm-block"><h3>債権者情報</h3>';
+  if(state.creditorsSkipped){
+    html += confirmRow("状況", "届出済みのため入力スキップ");
+  } else if(state.creditors.length === 0){
+    html += confirmRow("状況", "未入力");
+  } else {
+    state.creditors.forEach((cr,idx)=>{
+      const name = cr.name === "その他" ? cr.nameOther : cr.name;
+      html += confirmRow((idx+1)+". 債権者名", name);
+      html += confirmRow("借入額", cr.loanAmount+" 万円");
+      html += confirmRow("取引年数", cr.years);
+      html += confirmRow("延滞中", cr.overdue);
+      html += confirmRow("裁判の有無", cr.lawsuit);
+    });
+  }
+  html += '</div>';
+
+  html += '<div class="confirm-block"><h3>自動車ローン・住宅ローン</h3>';
+  html += confirmRow("自動車ローン", loan.carLoan);
+  if(loan.carLoan === "あり"){
+    html += confirmRow("　ローン会社／保証会社", loan.carLoanCompany+" ／ "+loan.carLoanGuarantee);
+    html += confirmRow("　連帯保証人", loan.carLoanCosigner + (loan.carLoanCosigner==="あり"?"（続柄："+loan.carLoanRelation+"）":""));
+    html += confirmRow("　残高", loan.carLoanBalance+" 万円");
+  }
+  html += confirmRow("住宅ローン", loan.houseLoan);
+  if(loan.houseLoan === "あり"){
+    html += confirmRow("　銀行名", loan.houseLoanBank);
+    html += confirmRow("　連帯保証人", loan.houseLoanCosigner + (loan.houseLoanCosigner==="あり"?"（続柄："+loan.houseLoanRelation+"）":""));
+    html += confirmRow("　併用カードローン", loan.houseLoanCardLoan);
+  }
+  html += '</div>';
+
+  html += '<div class="confirm-block"><h3>雇用状況</h3>';
+  html += confirmRow("雇用形態", emp.employmentType);
+  if(emp.employmentType === "派遣社員"){
+    html += confirmRow("派遣元", emp.dispatchAgency);
+    html += confirmRow("派遣先", emp.dispatchDestination);
+  } else {
+    html += confirmRow("勤務先名", emp.companyName);
+  }
+  html += confirmRow("勤務先住所", emp.companyAddress);
+  html += confirmRow("勤務先電話番号", emp.companyTel);
+  html += confirmRow("業者の勤務先認知状況", emp.companyKnows);
+  html += '</div>';
+
+  html += '<div class="confirm-block"><h3>収支状況（収入）</h3>';
+  html += confirmRow("同居家族の構成", inc.household);
+  html += confirmRow("本人の手取り収入", inc.selfIncome ? inc.selfIncome+" 円" : "");
+  html += confirmRow("配偶者の手取り収入", inc.spouseIncome ? inc.spouseIncome+" 円" : "");
+  if(inc.pensionAmount) html += confirmRow("年金・手当等（月額）", inc.pensionAmount+" 円");
+  inc.others.forEach(o=>{ if(o.role || o.amount) html += confirmRow("その他（"+o.role+"）", o.amount+" 円"); });
+  html += '</div>';
+
+  html += '<div class="confirm-block"><h3>収支状況（支出）</h3>';
+  html += confirmRow("家賃／住宅ローン", exp.rent ? exp.rent+" 円" : "");
+  html += confirmRow("食費", exp.food ? exp.food+" 円" : "");
+  html += confirmRow("学費", exp.tuition ? exp.tuition+" 円" : "");
+  exp.extra.forEach(x=>{ if(x.label || x.amount) html += confirmRow(x.label, x.amount+" 円"); });
+  html += '</div>';
+
+  return html;
+}
+
+function renderStep5(){
+  const c = $("stepContainer");
+  c.innerHTML =
+    '<section class="card">' +
+    '<h2 class="screen-title">STEP5：確認・送信</h2>' +
+    '<p class="screen-desc">入力内容をご確認のうえ、よろしければ送信してください。</p>' +
+    '<div class="send-error" id="sendError"></div>' +
+    '<div id="confirmContent"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" id="fixBtn">修正する</button>' +
+    '<button class="btn btn-accent" id="submitBtn">送信する</button></div>' +
+    '</section>';
+
+  $("confirmContent").innerHTML = buildConfirmHtml();
+  $("fixBtn").addEventListener("click", ()=> goToStep(1));
+  $("submitBtn").addEventListener("click", handleSubmit);
+}
+
+async function handleSubmit(){
+  const btn = $("submitBtn");
+  const errEl = $("sendError");
+  errEl.classList.remove("show");
+  btn.disabled = true;
+  btn.textContent = "送信中...";
+
+  const result = await sendConsultationData(state);
+
+  if(result.ok){
+    state.submittedAt = new Date().toISOString();
+    saveState();
+    goToStep(6);
+  } else {
+    btn.disabled = false;
+    btn.textContent = "送信する";
+    errEl.textContent = "送信に失敗しました。通信環境をご確認のうえ、もう一度お試しください。（"+(result.error?.message||"")+"）";
+    errEl.classList.add("show");
+  }
+}
+
+/* ============================================================
+   STEP6：完了
+   ============================================================ */
+function renderComplete(){
+  const c = $("stepContainer");
+  const when = state.submittedAt ? formatDateTime(new Date(state.submittedAt)) : "";
+  c.innerHTML =
+    '<section class="card">' +
+    '<div class="complete-hero">' +
+    '<svg class="complete-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="24" cy="24" r="20"/><path d="M15 24l6 6 12-13" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+    '<h2>送信完了</h2>' +
+    '<div class="complete-time">'+esc(when)+'</div>' +
+    '</div>' +
+    '<p class="screen-desc" style="text-align:center;">ご入力いただいた相談内容を受け付けました。担当者よりご連絡いたしますので、今しばらくお待ちください。</p>' +
+    '<button class="btn btn-primary" id="restartBtn">最初に戻る</button>' +
+    '</section>';
+
+  $("restartBtn").addEventListener("click", ()=>{
+    localStorage.removeItem(STORAGE_KEY);
+    state = newState();
+    render();
+  });
+}
+
+/* ============================================================
+   メール送信処理
+   （Formspreeで送信する実装。EmailJS＋お名前.comのSMTPへ切り替える場合は、
+    sendConsultationData内の呼び出し先を sendViaEmailJS に差し替えるだけでよい構造にしてある）
+   ============================================================ */
+async function sendConsultationData(currentState){
+  const payload = buildEmailPayload(currentState);
+  try{
+    await sendViaFormspree(payload);
+    return { ok:true };
+  }catch(error){
+    return { ok:false, error };
+  }
+}
+
+function buildEmailPayload(s){
+  const now = new Date();
+  const lines = [];
+  const push = (label, val) => lines.push(label+"："+(val===undefined||val===null||String(val).trim()===""?"（未入力）":val));
+
+  lines.push("送信日時："+formatDateTime(now));
+  lines.push("");
+  lines.push("■基本情報");
+  push("氏名", s.basic.name);
+  push("生年月日", s.basic.birthdate);
+  push("郵便番号", s.basic.zip);
+  push("住所１", s.basic.address1);
+  push("住所２", s.basic.address2);
+  push("電話番号", s.basic.tel);
+  push("メールアドレス", s.basic.email);
+  push("同居家族への秘密の状況", s.basic.familySecret);
+  push("郵便物の可否", s.basic.mailOk);
+  push("連絡しやすい曜日・時間帯", s.basic.contactTime);
+  push("月々の支払上限額（円）", s.basic.monthlyBudget);
+  push("過去の債務整理経験", s.basic.pastDebtHistory);
+  if(s.basic.pastDebtHistory === "ある"){
+    push("何年前", s.basic.pastDebtYears);
+    push("手続きの種類", s.basic.pastDebtType);
+  }
+
+  lines.push("");
+  lines.push("■債権者情報");
+  if(s.creditorsSkipped){
+    lines.push("届出済みのため入力スキップ");
+  } else if(s.creditors.length === 0){
+    lines.push("未入力");
+  } else {
+    s.creditors.forEach((cr,idx)=>{
+      const name = cr.name === "その他" ? cr.nameOther : cr.name;
+      lines.push("["+(idx+1)+"] "+name+" ／ 借入額:"+cr.loanAmount+"万円 ／ 取引年数:"+cr.years+" ／ 延滞:"+cr.overdue+" ／ 裁判:"+cr.lawsuit);
+    });
+  }
+
+  lines.push("");
+  lines.push("■自動車ローン・住宅ローン");
+  push("自動車ローン", s.loanInfo.carLoan);
+  if(s.loanInfo.carLoan === "あり"){
+    lines.push("  ローン会社:"+s.loanInfo.carLoanCompany+"／保証会社:"+s.loanInfo.carLoanGuarantee+"／連帯保証人:"+s.loanInfo.carLoanCosigner+(s.loanInfo.carLoanCosigner==="あり"?"(続柄:"+s.loanInfo.carLoanRelation+")":"")+"／残高:"+s.loanInfo.carLoanBalance+"万円");
+  }
+  push("住宅ローン", s.loanInfo.houseLoan);
+  if(s.loanInfo.houseLoan === "あり"){
+    lines.push("  銀行名:"+s.loanInfo.houseLoanBank+"／連帯保証人:"+s.loanInfo.houseLoanCosigner+(s.loanInfo.houseLoanCosigner==="あり"?"(続柄:"+s.loanInfo.houseLoanRelation+")":"")+"／併用カードローン:"+s.loanInfo.houseLoanCardLoan);
+  }
+
+  lines.push("");
+  lines.push("■雇用状況");
+  push("雇用形態", s.employment.employmentType);
+  if(s.employment.employmentType === "派遣社員"){
+    push("派遣元", s.employment.dispatchAgency);
+    push("派遣先", s.employment.dispatchDestination);
+  } else {
+    push("勤務先名", s.employment.companyName);
+  }
+  push("勤務先住所", s.employment.companyAddress);
+  push("勤務先電話番号", s.employment.companyTel);
+  push("業者の勤務先認知状況", s.employment.companyKnows);
+
+  lines.push("");
+  lines.push("■収支状況（収入）");
+  push("同居家族の構成", s.income.household);
+  push("本人の手取り収入（円）", s.income.selfIncome);
+  push("配偶者の手取り収入（円）", s.income.spouseIncome);
+  push("年金・手当等（月額・円）", s.income.pensionAmount);
+  s.income.others.forEach(o=>{ if(o.role || o.amount) push("その他収入（"+o.role+"）", o.amount); });
+
+  lines.push("");
+  lines.push("■収支状況（支出）");
+  push("家賃／住宅ローン（円）", s.expense.rent);
+  push("食費（円）", s.expense.food);
+  push("学費（円）", s.expense.tuition);
+  s.expense.extra.forEach(x=>{ if(x.label || x.amount) push(x.label, x.amount); });
+
+  return {
+    _subject: "【新規相談】"+(s.basic.name||"未入力")+"様より相談フォーム送信",
+    _replyto: s.basic.email,
+    name: s.basic.name,
+    email: s.basic.email,
+    submitted_at: formatDateTime(now),
+    mail_to_reference: MAIL_TO, // 実配送先はFormspreeフォーム設定に依存。EmailJS切替時にこの値をto欄に使用する
+    message: lines.join("\n")
+  };
+}
+
+async function sendViaFormspree(payload){
+  const res = await fetch(FORMSPREE_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok){
+    let detail = "";
+    try{ const j = await res.json(); detail = (j.errors||[]).map(e=>e.message).join(", "); }catch(e){}
+    throw new Error("送信エラー("+res.status+")"+(detail?": "+detail:""));
+  }
+  return res.json();
+}
+
+// 将来EmailJS＋お名前.comのSMTPへ切り替える際は、下記のような関数を実装し、
+// sendConsultationData内の sendViaFormspree(payload) 呼び出しを sendViaEmailJS(payload) に置き換えるだけでよい。
+// async function sendViaEmailJS(payload){
+//   return emailjs.send("SERVICE_ID", "TEMPLATE_ID", { ...payload, to_email: MAIL_TO }, "PUBLIC_KEY");
+// }
+
+/* ============================================================
+   初期化
+   ============================================================ */
+loadState();
+render();
+</script>
+</body>
+</html>

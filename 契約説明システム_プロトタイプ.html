@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+<title>債務整理 契約説明システム（プロトタイプ）</title>
+<style>
+  :root{
+    --navy:#1a3c6e;
+    --navy-dark:#122a4d;
+    --accent:#1f8a70;
+    --accent-dark:#166c57;
+    --bg:#f2f5f9;
+    --card:#ffffff;
+    --text:#233240;
+    --muted:#6b7a89;
+    --border:#dbe3ec;
+    --warn:#b8860b;
+    --danger:#c0392b;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.8;
+    -webkit-text-size-adjust:100%;
+  }
+  .app{
+    max-width:760px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--bg);
+  }
+  header.topbar{
+    background:var(--navy);
+    color:#fff;
+    padding:16px 20px;
+    text-align:center;
+  }
+  header.topbar h1{
+    margin:0;
+    font-size:1.05rem;
+    font-weight:600;
+    letter-spacing:.02em;
+  }
+  header.topbar .subtitle{
+    font-size:.78rem;
+    opacity:.85;
+    margin-top:4px;
+  }
+  .stepper{
+    display:flex;
+    justify-content:space-between;
+    padding:12px 16px;
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    gap:4px;
+  }
+  .stepper .dot-wrap{
+    flex:1;
+    text-align:center;
+    font-size:.68rem;
+    color:var(--muted);
+  }
+  .stepper .dot{
+    width:26px;height:26px;border-radius:50%;
+    background:#e3e9f0;
+    color:var(--muted);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 4px;
+    font-size:.75rem;
+    font-weight:700;
+    border:2px solid #e3e9f0;
+    transition:all .2s;
+  }
+  .stepper .dot-wrap.active .dot{
+    background:var(--navy);
+    border-color:var(--navy);
+    color:#fff;
+  }
+  .stepper .dot-wrap.done .dot{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  .stepper .dot-wrap.active{ color:var(--navy); font-weight:700; }
+
+  main{
+    flex:1;
+    padding:22px 18px 60px;
+  }
+  .screen{ display:none; animation:fadeIn .25s ease; }
+  .screen.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:24px 22px;
+    box-shadow:0 2px 10px rgba(20,40,70,.06);
+    border:1px solid var(--border);
+    margin-bottom:18px;
+  }
+  h2.screen-title{
+    font-size:1.25rem;
+    color:var(--navy);
+    margin:0 0 6px;
+  }
+  p.screen-desc{
+    color:var(--muted);
+    font-size:.9rem;
+    margin:0 0 20px;
+  }
+  label.field-label{
+    display:block;
+    font-weight:700;
+    margin-bottom:8px;
+    font-size:.95rem;
+  }
+  input[type="text"]{
+    width:100%;
+    padding:14px 14px;
+    font-size:1.05rem;
+    border:2px solid var(--border);
+    border-radius:10px;
+    outline:none;
+    background:#fbfcfe;
+  }
+  input[type="text"]:focus{ border-color:var(--navy); }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:15px 24px;
+    font-size:1rem;
+    font-weight:700;
+    border-radius:10px;
+    border:none;
+    cursor:pointer;
+    min-height:52px;
+    transition:transform .05s, background .15s, opacity .15s;
+    width:100%;
+  }
+  .btn:active{ transform:scale(.98); }
+  .btn-primary{ background:var(--navy); color:#fff; }
+  .btn-primary:hover{ background:var(--navy-dark); }
+  .btn-accent{ background:var(--accent); color:#fff; }
+  .btn-accent:hover{ background:var(--accent-dark); }
+  .btn:disabled{
+    background:#c7d0da !important;
+    color:#8b98a5 !important;
+    cursor:not-allowed;
+  }
+  .btn-outline{
+    background:#fff;
+    color:var(--navy);
+    border:2px solid var(--navy);
+  }
+
+  .type-options{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .type-option{
+    border:2px solid var(--border);
+    border-radius:12px;
+    padding:16px 16px;
+    cursor:pointer;
+    display:flex;
+    gap:14px;
+    align-items:center;
+    background:#fbfcfe;
+    transition:border-color .15s, background .15s;
+  }
+  .type-option:hover{ border-color:#9db4cf; }
+  .type-option.selected{
+    border-color:var(--navy);
+    background:#eaf1fb;
+  }
+  .type-option .type-icon{
+    width:44px;height:44px;flex-shrink:0;
+    color:var(--navy);
+  }
+  .type-option .type-name{
+    font-weight:700;
+    font-size:1.02rem;
+    margin-bottom:2px;
+  }
+  .type-option .type-desc{
+    font-size:.8rem;
+    color:var(--muted);
+  }
+  .type-option input{ display:none; }
+
+  /* explanation "player" */
+  .player-phase-label{
+    display:inline-block;
+    background:#eaf1fb;
+    color:var(--navy);
+    font-size:.72rem;
+    font-weight:700;
+    padding:4px 10px;
+    border-radius:20px;
+    margin-bottom:10px;
+  }
+  .player{
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid var(--border);
+    background:#0f2643;
+  }
+  .player-stage{
+    position:relative;
+    background:linear-gradient(160deg,#123057,#0c1f3d);
+    color:#fff;
+    padding:34px 22px 26px;
+    text-align:center;
+    min-height:220px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  .player-stage .stage-icon{
+    width:84px;height:84px;
+    color:#cfe0f7;
+    margin-bottom:14px;
+  }
+  .player-stage .stage-title{
+    font-size:1.15rem;
+    font-weight:700;
+    margin-bottom:10px;
+  }
+  .player-stage .stage-text{
+    font-size:.92rem;
+    color:#dbe6f5;
+    max-width:520px;
+    text-align:left;
+  }
+  .dummy-badge{
+    position:absolute;
+    top:10px; right:10px;
+    font-size:.65rem;
+    background:rgba(255,255,255,.15);
+    color:#fff;
+    padding:3px 8px;
+    border-radius:20px;
+  }
+  .play-overlay{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(10,22,42,.35);
+    cursor:pointer;
+  }
+  .play-btn-circle{
+    width:68px;height:68px;
+    border-radius:50%;
+    background:rgba(255,255,255,.92);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(0,0,0,.3);
+  }
+  .play-btn-circle svg{ width:28px;height:28px; color:var(--navy); margin-left:4px; }
+
+  .player-controls{
+    background:#0f2643;
+    padding:10px 14px 14px;
+  }
+  .progress-track{
+    width:100%;
+    height:6px;
+    background:rgba(255,255,255,.2);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background:var(--accent);
+    transition:width .1s linear;
+  }
+  .player-meta{
+    display:flex;
+    justify-content:space-between;
+    color:#b9c8dd;
+    font-size:.7rem;
+    margin-top:6px;
+  }
+
+  .pause-panel{
+    background:#fff;
+    padding:18px 20px 20px;
+    border-top:3px solid var(--accent);
+  }
+  .pause-panel .pause-heading{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:700;
+    color:var(--navy);
+    margin-bottom:12px;
+    font-size:.95rem;
+  }
+  .pause-panel .pause-heading svg{ width:20px;height:20px; color:var(--accent); flex-shrink:0; }
+
+  .check-item{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    background:#f6f9fc;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:10px;
+    cursor:pointer;
+  }
+  .check-item input[type="checkbox"]{
+    width:22px;height:22px;
+    flex-shrink:0;
+    margin-top:1px;
+    accent-color:var(--accent);
+  }
+  .check-item .check-label{ font-size:.9rem; }
+
+  .helper-note{
+    font-size:.75rem;
+    color:var(--muted);
+    margin-top:2px;
+    margin-bottom:14px;
+  }
+
+  .segment-progress{
+    text-align:center;
+    font-size:.75rem;
+    color:var(--muted);
+    margin-top:10px;
+  }
+
+  /* final / complete screens */
+  .summary-block{
+    background:#f6f9fc;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .summary-block h3{
+    margin:0 0 10px;
+    font-size:.9rem;
+    color:var(--navy);
+  }
+  .summary-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:.88rem;
+    padding:6px 0;
+    border-bottom:1px dashed var(--border);
+  }
+  .summary-row:last-child{ border-bottom:none; }
+  .agree-list{ list-style:none; margin:0; padding:0; }
+  .agree-list li{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    font-size:.86rem;
+    padding:7px 0;
+  }
+  .agree-list li .check-icon{
+    width:18px;height:18px;flex-shrink:0;
+    color:var(--accent);
+    margin-top:2px;
+  }
+
+  .complete-hero{
+    text-align:center;
+    padding:10px 0 6px;
+  }
+  .complete-hero .complete-icon{
+    width:64px;height:64px;
+    color:var(--accent);
+    margin-bottom:8px;
+  }
+  .complete-hero h2{
+    color:var(--navy);
+    margin:0 0 4px;
+  }
+  .complete-hero .complete-time{
+    font-size:.85rem;
+    color:var(--muted);
+  }
+
+  .btn-row{
+    display:flex;
+    gap:10px;
+    margin-top:6px;
+  }
+  .btn-row .btn{ flex:1; }
+
+  .legal-note{
+    font-size:.72rem;
+    color:var(--muted);
+    background:#fbfaf3;
+    border:1px solid #ece6c8;
+    border-radius:8px;
+    padding:10px 12px;
+    margin-top:16px;
+  }
+
+  footer.appfooter{
+    text-align:center;
+    font-size:.7rem;
+    color:var(--muted);
+    padding:14px;
+  }
+
+  /* print */
+  @media print{
+    header.topbar, .stepper, .btn-row, footer.appfooter, #printHideElements{ display:none !important; }
+    body{ background:#fff; }
+    .app{ max-width:100%; }
+    .card{ box-shadow:none; border:1px solid #999; }
+    .screen{ display:none !important; }
+    #screen-complete{ display:block !important; }
+  }
+
+  @media (max-width:480px){
+    .player-stage{ padding:26px 16px 20px; min-height:200px; }
+    .card{ padding:18px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <h1>債務整理 契約前説明システム（プロトタイプ）</h1>
+    <div class="subtitle">司法書士事務所 面談用インタラクティブ説明ツール</div>
+  </header>
+
+  <div class="stepper" id="stepper">
+    <div class="dot-wrap" data-step="1"><div class="dot">1</div>お名前</div>
+    <div class="dot-wrap" data-step="2"><div class="dot">2</div>種類選択</div>
+    <div class="dot-wrap" data-step="3"><div class="dot">3</div>共通説明</div>
+    <div class="dot-wrap" data-step="4"><div class="dot">4</div>個別説明</div>
+    <div class="dot-wrap" data-step="5"><div class="dot">5</div>最終確認</div>
+    <div class="dot-wrap" data-step="6"><div class="dot">6</div>完了</div>
+  </div>
+
+  <main id="app-main">
+
+    <!-- STEP1 : top -->
+    <section class="screen active" id="screen-top">
+      <div class="card">
+        <h2 class="screen-title">相談者様のお名前をご入力ください</h2>
+        <p class="screen-desc">これから債務整理に関するご説明を、動画（サンプル説明）とチェック項目に沿って進めていきます。すべてのご説明を最後までご確認いただく必要があります。</p>
+        <label class="field-label" for="nameInput">氏名</label>
+        <input type="text" id="nameInput" placeholder="例）法務 太郎" autocomplete="off">
+        <div style="height:20px;"></div>
+        <button class="btn btn-primary" id="startBtn" disabled>説明を開始する</button>
+      </div>
+    </section>
+
+    <!-- STEP2 : type select -->
+    <section class="screen" id="screen-type">
+      <div class="card">
+        <h2 class="screen-title"><span id="typeGreeting"></span>様　債務整理の種類を選択してください</h2>
+        <p class="screen-desc">現在ご検討中、またはご案内予定の手続きを選択してください。選択内容に応じて、この後の個別説明の内容が切り替わります。</p>
+        <div class="type-options" id="typeOptions">
+          <label class="type-option" data-type="voluntary">
+            <input type="radio" name="debtType" value="voluntary">
+            <svg class="type-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 24l8-8 6 6 8-8 8 8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 30h32" stroke-linecap="round"/><path d="M14 36h20" stroke-linecap="round"/></svg>
+            <div>
+              <div class="type-name">任意整理</div>
+              <div class="type-desc">裁判所を通さず、司法書士が債権者と直接交渉して利息カット・分割払いを見直します。</div>
+            </div>
+          </label>
+          <label class="type-option" data-type="bankruptcy">
+            <input type="radio" name="debtType" value="bankruptcy">
+            <svg class="type-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M24 6a18 18 0 1 0 12.7 30.7" stroke-linecap="round"/><path d="M24 6v10l8-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div>
+              <div class="type-name">自己破産</div>
+              <div class="type-desc">裁判所の手続きにより、原則すべての借金の返済義務を免除（免責）してもらいます。</div>
+            </div>
+          </label>
+          <label class="type-option" data-type="rehab">
+            <input type="radio" name="debtType" value="rehab">
+            <svg class="type-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 24 24 8l18 16" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 22v18h28V22" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 40v-10h8v10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div>
+              <div class="type-name">個人再生</div>
+              <div class="type-desc">借金を大幅に減額したうえで、原則3年で分割返済します。住宅を残せる場合があります。</div>
+            </div>
+          </label>
+        </div>
+        <div style="height:20px;"></div>
+        <button class="btn btn-primary" id="typeNextBtn" disabled>この種類で説明を進める</button>
+      </div>
+    </section>
+
+    <!-- STEP3/4 : explanation player (shared) -->
+    <section class="screen" id="screen-explain">
+      <div class="card">
+        <span class="player-phase-label" id="phaseLabel">STEP3：共通説明</span>
+        <div class="player">
+          <div class="player-stage" id="stageArea">
+            <span class="dummy-badge">サンプル説明（本番では動画に差替）</span>
+            <div class="stage-icon" id="stageIcon"></div>
+            <div class="stage-title" id="stageTitle"></div>
+            <div class="stage-text" id="stageText"></div>
+            <div class="play-overlay" id="playOverlay">
+              <div class="play-btn-circle">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="player-controls">
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="player-meta">
+              <span id="playStateLabel">再生前</span>
+              <span id="segCounter"></span>
+            </div>
+          </div>
+          <div class="pause-panel" id="pausePanel" style="display:none;">
+            <div class="pause-heading">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9"/></svg>
+              内容をご確認のうえ、チェックしてください
+            </div>
+            <div id="checkItemsWrap"></div>
+            <div class="helper-note">※ すべての項目にチェックが入ると、次へ進めます。</div>
+            <button class="btn btn-accent" id="nextSegmentBtn" disabled>確認して次へ進む</button>
+          </div>
+        </div>
+        <div class="segment-progress" id="segmentProgressText"></div>
+      </div>
+    </section>
+
+    <!-- STEP5 : final agreement -->
+    <section class="screen" id="screen-final">
+      <div class="card">
+        <h2 class="screen-title">最終確認</h2>
+        <p class="screen-desc">これまでご確認いただいた内容をまとめて表示しています。よろしければ「同意して完了」を押してください。</p>
+
+        <div class="summary-block">
+          <h3>相談者情報</h3>
+          <div class="summary-row"><span>お名前</span><span id="finalName"></span></div>
+          <div class="summary-row"><span>ご希望の手続き</span><span id="finalType"></span></div>
+        </div>
+
+        <div class="summary-block">
+          <h3>ご確認いただいた説明項目（全<span id="finalCount"></span>項目）</h3>
+          <ul class="agree-list" id="finalAgreeList"></ul>
+        </div>
+
+        <div style="height:6px;"></div>
+        <button class="btn btn-primary" id="finalAgreeBtn">上記すべての内容に同意して完了する</button>
+      </div>
+    </section>
+
+    <!-- STEP6 : complete -->
+    <section class="screen" id="screen-complete">
+      <div class="card">
+        <div class="complete-hero">
+          <svg class="complete-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="24" cy="24" r="20"/><path d="M15 24l6 6 12-13" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h2>ご説明への同意が完了しました</h2>
+          <div class="complete-time" id="completeTime"></div>
+        </div>
+
+        <div class="summary-block">
+          <h3>相談者情報</h3>
+          <div class="summary-row"><span>お名前</span><span id="completeName"></span></div>
+          <div class="summary-row"><span>ご希望の手続き</span><span id="completeType"></span></div>
+          <div class="summary-row"><span>完了日時</span><span id="completeTimeRow"></span></div>
+        </div>
+
+        <div class="summary-block">
+          <h3>同意済み項目（全<span id="completeCount"></span>項目）</h3>
+          <ul class="agree-list" id="completeAgreeList"></ul>
+        </div>
+
+        <div class="legal-note">
+          本記録は、相談者本人が本システム上で各説明内容を確認のうえ、同意ボタンを押下したことを示す記録です。実運用時には電子署名・視聴ログのサーバー保存等と組み合わせ、司法書士法等に準拠した説明義務履行の証跡として活用予定です。
+        </div>
+
+        <div class="btn-row" id="printHideElements">
+          <button class="btn btn-outline" id="printBtn">印刷 / PDF保存</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="appfooter">
+    プロトタイプ版｜実際の動画・条文確認は正式版で対応予定
+  </footer>
+</div>
+
+<script>
+(function(){
+
+  // ---------- icon library ----------
+  const ICONS = {
+    document: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M28 10h28l16 16v58a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z"/><path d="M56 10v16h16"/><path d="M32 46h32M32 58h32M32 70h20"/></svg>',
+    coin: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="48" cy="48" r="34"/><path d="M48 30v36M38 40h13a7 7 0 0 1 0 14H38m3 0h15"/></svg>',
+    flow: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="24" r="9"/><circle cx="48" cy="72" r="9"/><circle cx="78" cy="24" r="9"/><path d="M18 33v14a8 8 0 0 0 8 8h6M78 33v14a8 8 0 0 1-8 8h-6"/><path d="M48 55v8"/></svg>',
+    shield: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M48 12l28 10v22c0 20-12 32-28 40-16-8-28-20-28-40V22z"/><path d="M36 48l9 9 16-18"/></svg>',
+    handshake: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 40l16-14 12 6 10-6 16 14"/><path d="M28 32l14 14-6 6a6 6 0 0 1-9-9"/><path d="M42 46l6 6a6 6 0 0 0 9-9l-9-9"/><path d="M10 40v14l12 12M86 40v14L74 66"/></svg>',
+    refresh: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 48a28 28 0 0 1 47-20l7 7M76 48a28 28 0 0 1-47 20l-7-7"/><path d="M67 20h10v10M29 76H19V66"/></svg>',
+    house: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 46 48 16l34 30"/><path d="M22 40v38h52V40"/><path d="M40 78V56h16v22"/></svg>',
+    calendar: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="20" width="68" height="60" rx="6"/><path d="M14 38h68M32 12v14M64 12v14"/><path d="M30 54h10M46 54h10M62 54h6M30 66h10M46 66h10"/></svg>',
+    warning: '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M48 12 88 82H8z"/><path d="M48 40v18"/><circle cx="48" cy="68" r="1.5" fill="currentColor" stroke="none"/></svg>'
+  };
+
+  // ---------- data ----------
+  const TYPE_LABELS = {
+    voluntary: "任意整理",
+    bankruptcy: "自己破産",
+    rehab: "個人再生"
+  };
+
+  const COMMON_SEGMENTS = [
+    {
+      id:"common-1", icon:"document", title:"債務整理とは",
+      text:"債務整理とは、借金の返済が難しくなった場合に、利息のカットや分割払いの見直し、場合によっては借金の免除を行うことで、生活の立て直しを図る法的な手続きの総称です。主な方法として「任意整理」「自己破産」「個人再生」の3種類があり、状況に応じて適した方法をご案内します。",
+      checks:[{id:"agree-content", label:"債務整理の内容について説明を受け理解しました"}]
+    },
+    {
+      id:"common-2", icon:"coin", title:"費用について",
+      text:"手続きには司法書士への報酬や、裁判所へ納める費用（自己破産・個人再生の場合）などが必要です。費用は分割でのお支払いも可能な場合がありますので、具体的な金額やお支払い方法については、面談にて詳しくご説明します。",
+      checks:[{id:"agree-cost", label:"費用について説明を受け理解しました"}]
+    },
+    {
+      id:"common-3", icon:"flow", title:"手続きの流れ",
+      text:"ご依頼後、司法書士から債権者への受任通知の送付、必要書類の収集、手続書類の作成・提出、裁判所や債権者とのやり取りを経て、解決まで進みます。手続きの種類によって期間は異なりますが、一般的に数か月から1年程度かかります。",
+      checks:[{id:"agree-flow", label:"手続きの流れについて説明を受け理解しました"}]
+    },
+    {
+      id:"common-4", icon:"shield", title:"信用情報への影響",
+      text:"債務整理を行うと、信用情報機関に事故情報（いわゆる「ブラックリスト」）として登録され、一定期間（5～10年程度）新たな借入れやクレジットカードの利用、ローンの契約が難しくなります。この点についてもご理解いただいたうえで手続きを進めます。",
+      checks:[{id:"agree-credit", label:"信用情報への影響について説明を受け理解しました"}]
+    }
+  ];
+
+  const TYPE_SEGMENTS = {
+    voluntary: [
+      {
+        id:"vol-1", icon:"handshake", title:"任意整理とは",
+        text:"任意整理は、裁判所を通さずに司法書士が債権者と直接交渉し、将来利息のカットや返済期間の見直し（原則3～5年での分割返済）を行う手続きです。裁判所への手続きが不要なため、比較的短期間・低コストで進められる点が特徴です。",
+        checks:[{id:"agree-vol-1", label:"任意整理の内容とメリット・デメリットについて理解しました"}]
+      },
+      {
+        id:"vol-2", icon:"calendar", title:"返済計画について",
+        text:"任意整理後は、合意した内容に基づき原則として3年から5年で分割返済を行っていただきます。返済期間中に滞納が続くと和解内容が失効する場合がありますので、無理のない返済計画を一緒に検討します。",
+        checks:[{id:"agree-vol-2", label:"返済計画について理解しました"}]
+      }
+    ],
+    bankruptcy: [
+      {
+        id:"bk-1", icon:"refresh", title:"自己破産とは",
+        text:"自己破産は、裁判所に申立てを行い、支払い不能であることが認められた場合に、原則としてすべての借金の返済義務が免除（免責）される手続きです。ただし、一定額以上の財産は処分の対象となる場合があります。",
+        checks:[{id:"agree-bk-1", label:"自己破産の内容と財産処分について理解しました"}]
+      },
+      {
+        id:"bk-2", icon:"warning", title:"資格制限・官報公告について",
+        text:"自己破産の手続き中は、一部の資格（警備員、士業など）に一時的な制限がかかる場合があります。また、氏名や住所が官報に掲載されますが、一般の方が官報を日常的に閲覧することは少ないとされています。",
+        checks:[{id:"agree-bk-2", label:"資格制限・官報公告について理解しました"}]
+      }
+    ],
+    rehab: [
+      {
+        id:"rh-1", icon:"house", title:"個人再生とは",
+        text:"個人再生は、裁判所に申立てを行い、借金を大幅に減額（原則5分の1程度）したうえで、原則3年（最長5年）で分割返済を行う手続きです。自己破産と異なり、保有している財産を残しながら手続きを進められる点が特徴です。",
+        checks:[{id:"agree-rh-1", label:"個人再生の内容について理解しました"}]
+      },
+      {
+        id:"rh-2", icon:"house", title:"住宅資金特別条項について",
+        text:"個人再生には「住宅資金特別条項」という制度があり、要件を満たせば住宅ローンの支払いを継続しながら自宅を手放さずに手続きを進めることができます。ご自宅の状況に応じて適用可否を確認します。",
+        checks:[{id:"agree-rh-2", label:"住宅資金特別条項・再生計画について理解しました"}]
+      }
+    ]
+  };
+
+  // ---------- state ----------
+  const state = {
+    name:"",
+    type:"",
+    queue:[],
+    queueIndex:0,
+    agreedRecords:[], // {id,label}
+    completedAt:null
+  };
+
+  let playTimer = null;
+  const SEGMENT_DURATION_MS = 4200;
+
+  // ---------- helpers ----------
+  function $(id){ return document.getElementById(id); }
+
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    $(id).classList.add("active");
+  }
+
+  function setStep(n){
+    document.querySelectorAll(".stepper .dot-wrap").forEach(el=>{
+      const s = parseInt(el.dataset.step,10);
+      el.classList.toggle("active", s===n);
+      el.classList.toggle("done", s<n);
+    });
+  }
+
+  // ---------- STEP1 ----------
+  const nameInput = $("nameInput");
+  const startBtn = $("startBtn");
+  nameInput.addEventListener("input", ()=>{
+    startBtn.disabled = nameInput.value.trim().length === 0;
+  });
+  startBtn.addEventListener("click", ()=>{
+    state.name = nameInput.value.trim();
+    $("typeGreeting").textContent = state.name;
+    setStep(2);
+    showScreen("screen-type");
+  });
+
+  // ---------- STEP2 ----------
+  const typeOptions = $("typeOptions");
+  const typeNextBtn = $("typeNextBtn");
+  typeOptions.querySelectorAll(".type-option").forEach(opt=>{
+    opt.addEventListener("click", ()=>{
+      typeOptions.querySelectorAll(".type-option").forEach(o=>o.classList.remove("selected"));
+      opt.classList.add("selected");
+      opt.querySelector("input").checked = true;
+      state.type = opt.dataset.type;
+      typeNextBtn.disabled = false;
+    });
+  });
+  typeNextBtn.addEventListener("click", ()=>{
+    state.queue = COMMON_SEGMENTS.concat(TYPE_SEGMENTS[state.type]);
+    state.queueIndex = 0;
+    state.agreedRecords = [];
+    setStep(3);
+    showScreen("screen-explain");
+    renderSegment();
+  });
+
+  // ---------- STEP3/4 : explanation player ----------
+  const stageIcon = $("stageIcon");
+  const stageTitle = $("stageTitle");
+  const stageText = $("stageText");
+  const playOverlay = $("playOverlay");
+  const progressFill = $("progressFill");
+  const playStateLabel = $("playStateLabel");
+  const segCounter = $("segCounter");
+  const pausePanel = $("pausePanel");
+  const checkItemsWrap = $("checkItemsWrap");
+  const nextSegmentBtn = $("nextSegmentBtn");
+  const phaseLabel = $("phaseLabel");
+  const segmentProgressText = $("segmentProgressText");
+
+  function currentSegment(){ return state.queue[state.queueIndex]; }
+
+  function renderSegment(){
+    clearInterval(playTimer);
+    const seg = currentSegment();
+    const isCommon = state.queueIndex < COMMON_SEGMENTS.length;
+    phaseLabel.textContent = isCommon ? "STEP3：共通説明" : "STEP4：個別説明（" + TYPE_LABELS[state.type] + "）";
+    setStep(isCommon ? 3 : 4);
+
+    stageIcon.innerHTML = ICONS[seg.icon] || ICONS.document;
+    stageTitle.textContent = seg.title;
+    stageText.textContent = seg.text;
+
+    progressFill.style.width = "0%";
+    playStateLabel.textContent = "再生前";
+    segCounter.textContent = (state.queueIndex+1) + " / " + state.queue.length;
+    playOverlay.style.display = "flex";
+    pausePanel.style.display = "none";
+    nextSegmentBtn.disabled = true;
+
+    segmentProgressText.textContent = "説明項目 " + (state.queueIndex+1) + " / " + state.queue.length + " を表示中";
+  }
+
+  playOverlay.addEventListener("click", startPlayback);
+
+  function startPlayback(){
+    playOverlay.style.display = "none";
+    playStateLabel.textContent = "再生中…";
+    let elapsed = 0;
+    const stepMs = 60;
+    clearInterval(playTimer);
+    playTimer = setInterval(()=>{
+      elapsed += stepMs;
+      const pct = Math.min(100, (elapsed / SEGMENT_DURATION_MS) * 100);
+      progressFill.style.width = pct + "%";
+      if(pct >= 100){
+        clearInterval(playTimer);
+        onSegmentEnded();
+      }
+    }, stepMs);
+  }
+
+  function onSegmentEnded(){
+    playStateLabel.textContent = "一時停止（要確認）";
+    const seg = currentSegment();
+    checkItemsWrap.innerHTML = "";
+    seg.checks.forEach(chk=>{
+      const row = document.createElement("label");
+      row.className = "check-item";
+      row.innerHTML = '<input type="checkbox" data-checkid="'+chk.id+'"><span class="check-label">'+chk.label+'</span>';
+      checkItemsWrap.appendChild(row);
+    });
+    pausePanel.style.display = "block";
+    nextSegmentBtn.disabled = true;
+
+    checkItemsWrap.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.addEventListener("change", updateNextButtonState);
+    });
+  }
+
+  function updateNextButtonState(){
+    const boxes = checkItemsWrap.querySelectorAll('input[type="checkbox"]');
+    const allChecked = Array.from(boxes).every(b=>b.checked);
+    nextSegmentBtn.disabled = !allChecked;
+  }
+
+  nextSegmentBtn.addEventListener("click", ()=>{
+    const seg = currentSegment();
+    seg.checks.forEach(chk=>{
+      state.agreedRecords.push({id:chk.id, label:chk.label});
+    });
+
+    if(state.queueIndex < state.queue.length - 1){
+      state.queueIndex++;
+      renderSegment();
+    } else {
+      buildFinalScreen();
+      setStep(5);
+      showScreen("screen-final");
+    }
+  });
+
+  // ---------- STEP5 : final ----------
+  function buildFinalScreen(){
+    $("finalName").textContent = state.name + " 様";
+    $("finalType").textContent = TYPE_LABELS[state.type];
+    $("finalCount").textContent = state.agreedRecords.length;
+    const list = $("finalAgreeList");
+    list.innerHTML = "";
+    state.agreedRecords.forEach(rec=>{
+      const li = document.createElement("li");
+      li.innerHTML = '<svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>'+rec.label+'</span>';
+      list.appendChild(li);
+    });
+  }
+
+  $("finalAgreeBtn").addEventListener("click", ()=>{
+    state.completedAt = new Date();
+    buildCompleteScreen();
+    setStep(6);
+    showScreen("screen-complete");
+  });
+
+  // ---------- STEP6 : complete ----------
+  function formatDateTime(d){
+    const pad = n => String(n).padStart(2,"0");
+    return d.getFullYear()+"年"+pad(d.getMonth()+1)+"月"+pad(d.getDate())+"日 "
+      + pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());
+  }
+
+  function buildCompleteScreen(){
+    const formatted = formatDateTime(state.completedAt);
+    $("completeTime").textContent = formatted + " 完了";
+    $("completeName").textContent = state.name + " 様";
+    $("completeType").textContent = TYPE_LABELS[state.type];
+    $("completeTimeRow").textContent = formatted;
+    $("completeCount").textContent = state.agreedRecords.length;
+
+    const list = $("completeAgreeList");
+    list.innerHTML = "";
+    state.agreedRecords.forEach(rec=>{
+      const li = document.createElement("li");
+      li.innerHTML = '<svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>'+rec.label+'</span>';
+      list.appendChild(li);
+    });
+  }
+
+  $("printBtn").addEventListener("click", ()=>{
+    window.print();
+  });
+
+})();
+</script>
+</body>
+</html>
