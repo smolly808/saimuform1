@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
-<title>債務整理 相談フォームシステム（プロトタイプ）</title>
+<title>債務整理　事前相談フォーム　市民の森司法書士事務所</title>
 <style>
   :root{
     --navy:#1a3c6e;
@@ -128,6 +128,12 @@
     color:var(--muted);
     font-size:.85rem;
     margin:0 0 20px;
+  }
+  p.optional-emphasis{
+    color:var(--danger);
+    font-weight:700;
+    font-size:1.05rem;
+    margin:0 0 18px;
   }
 
   /* form elements */
@@ -324,11 +330,18 @@
     background:#eaf1fb;
     border:1px solid #c9dbf2;
     border-radius:10px;
-    padding:16px;
+    padding:18px 16px;
     margin-bottom:20px;
     text-align:center;
   }
   .skip-box p{ margin:0 0 10px; font-size:.85rem; color:var(--text); }
+  .skip-box .skip-icon{
+    width:40px;
+    height:40px;
+    color:var(--navy);
+    display:block;
+    margin:0 auto 10px;
+  }
 
   /* dynamic rows (income others / expense extra) */
   .dynamic-row{
@@ -446,8 +459,7 @@
 <div class="app">
 
   <header class="topbar">
-    <h1>債務整理 事前相談フォーム（プロトタイプ）</h1>
-    <div class="subtitle">司法書士事務所 面談前ヒアリングシステム</div>
+    <h1>債務整理　事前相談フォーム　市民の森司法書士事務所</h1>
   </header>
 
   <div class="progress-wrap">
@@ -490,10 +502,13 @@ const STORAGE_KEY = "debtConsultFormV1";
 // 氏名以外はすべて任意入力（未入力でも次のステップ・送信に進める）
 const STEP1_FIELDS = [
   { id:"name", label:"氏名", type:"text", required:true, placeholder:"例）法務 太郎" },
+  { id:"furigana", label:"氏名（ふりがな）", type:"text", required:false, placeholder:"例）ほうむ たろう" },
   { id:"birthdate", label:"生年月日", type:"date", required:false },
   { id:"zip", label:"郵便番号", type:"text", required:false, placeholder:"例）123-4567" },
   { id:"address1", label:"住所１（番地まで）", type:"text", required:false },
   { id:"address2", label:"住所２（建物名・号室など）", type:"text", required:false },
+  { id:"housingStatus", label:"住居の状況", type:"radio",
+    options:["賃貸","持ち家（ローンあり）","持ち家（ローンなし）","実家","社宅・寮","その他"], required:false },
   { id:"tel", label:"電話番号", type:"tel", required:false, placeholder:"例）090-1234-5678" },
   { id:"email", label:"メールアドレス", type:"email", required:false },
   { id:"familySecret", label:"借入について秘密にしている同居家族はいますか", type:"radio",
@@ -513,17 +528,20 @@ const STEP1_FIELDS = [
 
 const STEP3_FIELDS = [
   { id:"employmentType", label:"雇用形態", type:"radio",
-    options:["正社員","派遣社員","パート"], required:false, branch:true },
+    options:["正社員","派遣社員","パート","自営業","無職"], required:false, branch:true },
   { id:"dispatchAgency", label:"派遣元", type:"text", required:false,
     showIf:(d)=> d.employmentType === "派遣社員" },
   { id:"dispatchDestination", label:"派遣先", type:"text", required:false,
     showIf:(d)=> d.employmentType === "派遣社員" },
   { id:"companyName", label:"勤務先名", type:"text", required:false,
-    showIf:(d)=> d.employmentType !== "派遣社員" },
-  { id:"companyAddress", label:"勤務先住所", type:"text", required:false },
-  { id:"companyTel", label:"勤務先電話番号", type:"tel", required:false },
+    showIf:(d)=> d.employmentType !== "派遣社員" && d.employmentType !== "無職" },
+  { id:"companyAddress", label:"勤務先住所", type:"text", required:false,
+    showIf:(d)=> d.employmentType !== "無職" },
+  { id:"companyTel", label:"勤務先電話番号", type:"tel", required:false,
+    showIf:(d)=> d.employmentType !== "無職" },
   { id:"companyKnows", label:"業者が既に勤務先を知っているか", type:"radio",
-    options:["知っている","知らない"], required:false }
+    options:["知っている","知らない"], required:false,
+    showIf:(d)=> d.employmentType !== "無職" }
 ];
 
 const CREDITOR_NAME_OPTIONS = [
@@ -532,12 +550,23 @@ const CREDITOR_NAME_OPTIONS = [
   "ゆうちょ銀行","日本学生支援機構","その他"
 ];
 const CREDITOR_YEARS_OPTIONS = ["不明","6か月未満","1年未満","1年","1年半","2年","3年","4年以上"];
+const CREDITOR_OVERDUE_PERIOD_OPTIONS = ["1～2ヶ月","3ヶ月以上","半年以上","1年以上","5年以上"];
+const CREDITOR_LAWSUIT_OPTIONS = ["なし","過去に裁判になった","現在裁判所から書類が届いている"];
+const CREDITOR_LAWSUIT_DOC_TYPE_OPTIONS = ["訴状","支払督促"];
 
 /* ============================================================
    状態管理
    ============================================================ */
 function newCreditorDraft(){
-  return { name:"", nameOther:"", loanAmount:"", years:"", overdue:"", lawsuit:"" };
+  return {
+    name:"", nameOther:"", loanAmount:"", years:"", overdue:"", overduePeriod:"",
+    lawsuit:"", lawsuitDocType:"", lawsuitReceivedDate:""
+  };
+}
+
+// 支出の自由入力欄は、最初から空欄を数件表示しておくことで入力の手間を減らす
+function newExpenseExtraRows(){
+  return Array.from({length:5}, ()=> ({label:"", amount:""}));
 }
 
 // 自動車ローン・住宅ローンは特定の債権者に紐づく質問ではなく、債権者を全件入力し終えた後にまとめて一度だけ聞く項目
@@ -551,7 +580,7 @@ function newLoanInfo(){
 function newState(){
   return {
     currentStep: 1,
-    basic: { name:"", birthdate:"", zip:"", address1:"", address2:"", tel:"", email:"",
+    basic: { name:"", furigana:"", birthdate:"", zip:"", address1:"", address2:"", housingStatus:"", tel:"", email:"",
       familySecret:"", mailOk:"", contactTime:"", monthlyBudget:"",
       pastDebtHistory:"", pastDebtYears:"", pastDebtType:"" },
     creditors: [],
@@ -562,7 +591,7 @@ function newState(){
     employment: { employmentType:"", companyName:"", dispatchAgency:"", dispatchDestination:"",
       companyAddress:"", companyTel:"", companyKnows:"" },
     income: { household:"", selfIncome:"", spouseIncome:"", pensionAmount:"", others:[] },
-    expense: { rent:"", food:"", tuition:"", extra:[] },
+    expense: { rent:"", food:"", tuition:"", extra: newExpenseExtraRows() },
     submittedAt: null
   };
 }
@@ -729,7 +758,8 @@ function renderStep1(){
   c.innerHTML =
     '<section class="card">' +
     '<h2 class="screen-title">STEP1：基本情報</h2>' +
-    '<p class="screen-desc">まずはご相談者様ご自身の情報をご入力ください。<span class="req">必須</span>の項目は入力が必要です。</p>' +
+    '<p class="screen-desc">まずはご相談者様ご自身の情報をご入力ください。</p>' +
+    '<p class="optional-emphasis">※ 氏名以外の項目はすべて任意です。分かる範囲でご記入いただければ大丈夫です。</p>' +
     '<div id="step1Fields"></div>' +
     '<div class="btn-row"><button class="btn btn-primary" id="step1NextBtn">次へ進む</button></div>' +
     '</section>';
@@ -824,18 +854,24 @@ function validateKeyedFields(container, prefix, dataObj, rules){
 
 function creditorSummaryHtml(cr, idx){
   const name = cr.name === "その他" ? (cr.nameOther || "その他") : cr.name;
-  return '<div class="creditor-card" data-idx="'+idx+'">' +
+  let html = '<div class="creditor-card" data-idx="'+idx+'">' +
     '<div class="creditor-head"><span class="creditor-name">'+(idx+1)+'. '+esc(name)+'</span>' +
     '<button type="button" class="btn-danger-outline" data-remove-creditor="'+idx+'">削除</button></div>' +
     '<div class="creditor-detail"><span class="k">借入額：</span>'+esc(cr.loanAmount)+' 万円　<span class="k">取引年数：</span>'+esc(cr.years)+'</div>' +
-    '<div class="creditor-detail"><span class="k">延滞中：</span>'+esc(cr.overdue)+'　<span class="k">訴訟：</span>'+esc(cr.lawsuit)+'</div>' +
-    '</div>';
+    '<div class="creditor-detail"><span class="k">延滞中：</span>'+esc(cr.overdue)+(cr.overdue==="あり" && cr.overduePeriod?"（"+esc(cr.overduePeriod)+"）":"")+'</div>' +
+    '<div class="creditor-detail"><span class="k">訴訟：</span>'+esc(cr.lawsuit)+'</div>';
+  if(cr.lawsuit === "現在裁判所から書類が届いている"){
+    html += '<div class="creditor-detail"><span class="k">　書類の種類：</span>'+esc(cr.lawsuitDocType)+'　<span class="k">受取日：</span>'+esc(cr.lawsuitReceivedDate)+'</div>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function renderCreditorDraftForm(){
   const d = state.creditorDraft;
   const nameIsOther = d.name === "その他";
   let html = '<h3 class="section-sub">債権者情報を入力</h3>';
+  html += '<p class="field-hint">複数の業者からお借入れがある場合は、1社ずつご入力ください。「この債権者を追加する」を押すと、続けて次の債権者を入力できます。</p>';
   html += keyedSelectHtml("cd-name","債権者名",CREDITOR_NAME_OPTIONS,d.name,false);
   if(nameIsOther){
     html += keyedTextHtml("cd-nameOther","債権者名（自由入力）",d.nameOther,false,"text","例）〇〇信用金庫");
@@ -843,7 +879,16 @@ function renderCreditorDraftForm(){
   html += keyedTextHtml("cd-loanAmount","借入額（万円）",d.loanAmount,false,"number","例）50");
   html += keyedSelectHtml("cd-years","取引年数",CREDITOR_YEARS_OPTIONS,d.years,false);
   html += keyedRadioHtml("cd-overdue","延滞中かどうか",["あり","なし"],d.overdue,false);
-  html += keyedRadioHtml("cd-lawsuit","裁判されているかどうか",["あり","なし"],d.lawsuit,false);
+  if(d.overdue === "あり"){
+    html += keyedSelectHtml("cd-overduePeriod","延滞期間（最後の返済日から）",CREDITOR_OVERDUE_PERIOD_OPTIONS,d.overduePeriod,false);
+  }
+  html += keyedRadioHtml("cd-lawsuit","裁判されているかどうか",CREDITOR_LAWSUIT_OPTIONS,d.lawsuit,false);
+  if(d.lawsuit === "現在裁判所から書類が届いている"){
+    html += '<fieldset class="subfield-box"><legend>届いている書類について</legend>';
+    html += keyedRadioHtml("cd-lawsuitDocType","書類の種類",CREDITOR_LAWSUIT_DOC_TYPE_OPTIONS,d.lawsuitDocType,false);
+    html += keyedTextHtml("cd-lawsuitReceivedDate","書類を受け取った日",d.lawsuitReceivedDate,false,"date");
+    html += '</fieldset>';
+  }
   html += '<button type="button" class="btn btn-accent" id="addCreditorBtn">この債権者を追加する</button>';
   return html;
 }
@@ -859,7 +904,10 @@ function validateCreditorDraft(container){
     { key:"loanAmount", required:false },
     { key:"years", required:false },
     { key:"overdue", required:false },
-    { key:"lawsuit", required:false }
+    { key:"overduePeriod", required:false, when:d=> d.overdue === "あり" },
+    { key:"lawsuit", required:false },
+    { key:"lawsuitDocType", required:false, when:d=> d.lawsuit === "現在裁判所から書類が届いている" },
+    { key:"lawsuitReceivedDate", required:false, when:d=> d.lawsuit === "現在裁判所から書類が届いている" }
   ]);
 }
 
@@ -890,7 +938,7 @@ function renderLoanInfoForm(){
     if(d.houseLoanCosigner === "あり"){
       html += keyedTextHtml("li-houseLoanRelation","連帯保証人の続柄",d.houseLoanRelation,false);
     }
-    html += keyedRadioHtml("li-houseLoanCardLoan","併用カードローンの有無",["あり","なし"],d.houseLoanCardLoan,false);
+    html += keyedRadioHtml("li-houseLoanCardLoan","同じ銀行からの住宅ローン以外の借入れの有無",["あり","なし"],d.houseLoanCardLoan,false);
     html += '</fieldset>';
   }
   return html;
@@ -928,11 +976,15 @@ function renderStep2List(){
     '<h2 class="screen-title">STEP2：債権者の届出</h2>' +
     '<p class="screen-desc">お借入れのある業者について、分かる範囲でご入力ください。既に届出済みの場合はスキップできます。</p>';
 
+  const skipIconSvg = '<svg class="skip-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6h14l8 8v26a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M28 6v8h8"/><path d="M17 26l5 5 10-11"/></svg>';
+
   if(!state.creditorsSkipped){
-    html += '<div class="skip-box"><p>すでにLINEやメールでこちらに詳細を届出頂いている場合は、こちらのボタンでスキップしていただいて結構です。</p>' +
+    html += '<div class="skip-box">' + skipIconSvg +
+      '<p>すでにLINEやメールでこちらに詳細を届出頂いている場合は、こちらのボタンでスキップしていただいて結構です。</p>' +
       '<button type="button" class="btn btn-outline" id="skipCreditorBtn">届出済みのため入力をスキップする</button></div>';
   } else {
-    html += '<div class="skip-box"><p>「届出済み」としてスキップ中です</p>' +
+    html += '<div class="skip-box">' + skipIconSvg +
+      '<p>「届出済み」としてスキップ中です</p>' +
       '<button type="button" class="btn btn-outline" id="unskipCreditorBtn">入力に戻る</button></div>';
   }
 
@@ -1021,6 +1073,7 @@ function renderStep3(){
     '<section class="card">' +
     '<h2 class="screen-title">STEP3：雇用状況</h2>' +
     '<p class="screen-desc">現在のお勤め先についてご入力ください。</p>' +
+    '<div class="skip-box"><p><strong style="color:var(--danger);">※ この項目はすべて任意です。</strong>ご相談の初期段階で勤務先の情報をお伝えするのが不安な場合は、空欄のまま次に進んでいただいて構いません。面談時に改めて伺うことも可能です。</p></div>' +
     '<div id="step3Fields"></div>' +
     '<div class="btn-row"><button class="btn btn-outline" id="step3BackBtn">戻る</button>' +
     '<button class="btn btn-primary" id="step3NextBtn">次へ進む</button></div>' +
@@ -1044,6 +1097,7 @@ function renderStep3(){
    STEP4：収支状況（任意入力）
    ============================================================ */
 const EXPENSE_EXTRA_MAX = 17;
+const EXPENSE_EXAMPLE_LABELS = ["通信費","交通費","水道光熱費","保険料","交際費"];
 
 function renderStep4(){
   const c = $("stepContainer");
@@ -1052,7 +1106,7 @@ function renderStep4(){
 
   let html = '<section class="card">' +
     '<h2 class="screen-title">STEP4：収支状況</h2>' +
-    '<p class="screen-desc">このSTEPの項目はすべて任意です。分かる範囲でご入力ください。</p>';
+    '<p class="optional-emphasis">※ この項目はすべて任意です。分かる範囲でご入力ください。</p>';
 
   html += '<h3 class="section-sub">収入</h3>';
   html += '<div class="form-group"><label class="field-label">同居家族の構成</label><input type="text" data-inc="household" value="'+esc(inc.household)+'" placeholder="例）妻・子2人と同居"></div>';
@@ -1078,8 +1132,9 @@ function renderStep4(){
 
   html += '<div class="form-group"><label class="field-label">その他の支出項目（最大'+EXPENSE_EXTRA_MAX+'件）</label>';
   exp.extra.forEach((row,idx)=>{
+    const exampleLabel = EXPENSE_EXAMPLE_LABELS[idx % EXPENSE_EXAMPLE_LABELS.length];
     html += '<div class="dynamic-row" data-extra-idx="'+idx+'">' +
-      '<div class="dr-field"><input type="text" data-extra-label value="'+esc(row.label)+'" placeholder="項目名（例：通信費）"></div>' +
+      '<div class="dr-field"><input type="text" data-extra-label value="'+esc(row.label)+'" placeholder="項目名（例：'+esc(exampleLabel)+'）"></div>' +
       '<div class="dr-field" style="max-width:140px;"><input type="number" data-extra-amount value="'+esc(row.amount)+'" placeholder="金額（円）"></div>' +
       '<button type="button" class="dr-remove" data-remove-extra="'+idx+'">×</button></div>';
   });
@@ -1134,10 +1189,12 @@ function buildConfirmHtml(){
 
   html += '<div class="confirm-block"><h3>基本情報</h3>';
   html += confirmRow("氏名", b.name);
+  html += confirmRow("氏名（ふりがな）", b.furigana);
   html += confirmRow("生年月日", b.birthdate);
   html += confirmRow("郵便番号", b.zip);
   html += confirmRow("住所１", b.address1);
   html += confirmRow("住所２", b.address2);
+  html += confirmRow("住居の状況", b.housingStatus);
   html += confirmRow("電話番号", b.tel);
   html += confirmRow("メールアドレス", b.email);
   html += confirmRow("同居家族への秘密の状況", b.familySecret);
@@ -1163,7 +1220,14 @@ function buildConfirmHtml(){
       html += confirmRow("借入額", cr.loanAmount+" 万円");
       html += confirmRow("取引年数", cr.years);
       html += confirmRow("延滞中", cr.overdue);
+      if(cr.overdue === "あり"){
+        html += confirmRow("　延滞期間", cr.overduePeriod);
+      }
       html += confirmRow("裁判の有無", cr.lawsuit);
+      if(cr.lawsuit === "現在裁判所から書類が届いている"){
+        html += confirmRow("　書類の種類", cr.lawsuitDocType);
+        html += confirmRow("　受け取った日", cr.lawsuitReceivedDate);
+      }
     });
   }
   html += '</div>';
@@ -1179,7 +1243,7 @@ function buildConfirmHtml(){
   if(loan.houseLoan === "あり"){
     html += confirmRow("　銀行名", loan.houseLoanBank);
     html += confirmRow("　連帯保証人", loan.houseLoanCosigner + (loan.houseLoanCosigner==="あり"?"（続柄："+loan.houseLoanRelation+"）":""));
-    html += confirmRow("　併用カードローン", loan.houseLoanCardLoan);
+    html += confirmRow("　同銀行の他の借入れ", loan.houseLoanCardLoan);
   }
   html += '</div>';
 
@@ -1300,10 +1364,12 @@ function buildEmailPayload(s){
   lines.push("");
   lines.push("■基本情報");
   push("氏名", s.basic.name);
+  push("氏名（ふりがな）", s.basic.furigana);
   push("生年月日", s.basic.birthdate);
   push("郵便番号", s.basic.zip);
   push("住所１", s.basic.address1);
   push("住所２", s.basic.address2);
+  push("住居の状況", s.basic.housingStatus);
   push("電話番号", s.basic.tel);
   push("メールアドレス", s.basic.email);
   push("同居家族への秘密の状況", s.basic.familySecret);
@@ -1325,7 +1391,12 @@ function buildEmailPayload(s){
   } else {
     s.creditors.forEach((cr,idx)=>{
       const name = cr.name === "その他" ? cr.nameOther : cr.name;
-      lines.push("["+(idx+1)+"] "+name+" ／ 借入額:"+cr.loanAmount+"万円 ／ 取引年数:"+cr.years+" ／ 延滞:"+cr.overdue+" ／ 裁判:"+cr.lawsuit);
+      const overdueDetail = cr.overdue === "あり" && cr.overduePeriod ? "("+cr.overduePeriod+")" : "";
+      let lawsuitDetail = cr.lawsuit;
+      if(cr.lawsuit === "現在裁判所から書類が届いている"){
+        lawsuitDetail += "(書類:"+cr.lawsuitDocType+" ／ 受取日:"+cr.lawsuitReceivedDate+")";
+      }
+      lines.push("["+(idx+1)+"] "+name+" ／ 借入額:"+cr.loanAmount+"万円 ／ 取引年数:"+cr.years+" ／ 延滞:"+cr.overdue+overdueDetail+" ／ 裁判:"+lawsuitDetail);
     });
   }
 
@@ -1337,7 +1408,7 @@ function buildEmailPayload(s){
   }
   push("住宅ローン", s.loanInfo.houseLoan);
   if(s.loanInfo.houseLoan === "あり"){
-    lines.push("  銀行名:"+s.loanInfo.houseLoanBank+"／連帯保証人:"+s.loanInfo.houseLoanCosigner+(s.loanInfo.houseLoanCosigner==="あり"?"(続柄:"+s.loanInfo.houseLoanRelation+")":"")+"／併用カードローン:"+s.loanInfo.houseLoanCardLoan);
+    lines.push("  銀行名:"+s.loanInfo.houseLoanBank+"／連帯保証人:"+s.loanInfo.houseLoanCosigner+(s.loanInfo.houseLoanCosigner==="あり"?"(続柄:"+s.loanInfo.houseLoanRelation+")":"")+"／同銀行の住宅ローン以外の借入れ:"+s.loanInfo.houseLoanCardLoan);
   }
 
   lines.push("");
