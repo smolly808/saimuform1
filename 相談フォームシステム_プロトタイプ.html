@@ -505,7 +505,7 @@
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xykreevd";
 // 受信先メールアドレス（お名前.comで取得した独自ドメインのメール等。実際の配送先はFormspree側のフォーム設定に紐づくが、
 // EmailJS+SMTPへ切り替えた際にはこの定数がそのまま送信先として使われる）
-const MAIL_TO = "info@example-office.com";
+const MAIL_TO = "saimusodan@shiminsodan.com";
 // localStorage保存キー
 const STORAGE_KEY = "debtConsultFormV1";
 
@@ -1477,7 +1477,7 @@ function buildEmailPayload(s){
   push("支出合計", formatYen(calcExpenseTotal(s.expense)));
 
   return {
-    _subject: "【新規相談】"+(s.basic.name||"未入力")+"様より相談フォーム送信",
+    _subject: "お客様情報（　"+(s.basic.name||"未入力")+"様）",
     _replyto: s.basic.email,
     name: s.basic.name,
     email: s.basic.email,
