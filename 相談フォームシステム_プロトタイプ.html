@@ -343,6 +343,19 @@
     margin:0 auto 10px;
   }
 
+  .total-box{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#eaf1fb;
+    border:1px solid #c9dbf2;
+    border-radius:10px;
+    padding:14px 16px;
+    margin:4px 0 22px;
+  }
+  .total-box .total-label{ font-weight:700; color:var(--navy); font-size:.9rem; }
+  .total-box .total-value{ font-weight:700; color:var(--navy); font-size:1.2rem; }
+
   /* dynamic rows (income others / expense extra) */
   .dynamic-row{
     display:flex;
@@ -639,6 +652,17 @@ function formatDateTime(d){
   const pad = n => String(n).padStart(2,"0");
   return d.getFullYear()+"年"+pad(d.getMonth()+1)+"月"+pad(d.getDate())+"日 "
     + pad(d.getHours())+":"+pad(d.getMinutes());
+}
+
+function toNum(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function formatYen(n){ return n.toLocaleString("ja-JP")+" 円"; }
+function calcIncomeTotal(inc){
+  return toNum(inc.selfIncome) + toNum(inc.spouseIncome) + toNum(inc.pensionAmount)
+    + inc.others.reduce((sum,o)=> sum + toNum(o.amount), 0);
+}
+function calcExpenseTotal(exp){
+  return toNum(exp.rent) + toNum(exp.food) + toNum(exp.tuition)
+    + exp.extra.reduce((sum,x)=> sum + toNum(x.amount), 0);
 }
 
 function updateProgressUI(){
@@ -1125,6 +1149,8 @@ function renderStep4(){
   });
   html += '<button type="button" class="add-row-btn" id="addOtherIncomeBtn">＋ その他の収入を追加</button></div>';
 
+  html += '<div class="total-box"><span class="total-label">収入合計</span><span class="total-value" id="incomeTotalDisplay">'+formatYen(calcIncomeTotal(inc))+'</span></div>';
+
   html += '<h3 class="section-sub">支出</h3>';
   html += '<div class="form-group"><label class="field-label">家賃もしくは住宅ローン（円）</label><input type="number" data-exp="rent" value="'+esc(exp.rent)+'"></div>';
   html += '<div class="form-group"><label class="field-label">食費（円）</label><input type="number" data-exp="food" value="'+esc(exp.food)+'"></div>';
@@ -1140,19 +1166,26 @@ function renderStep4(){
   });
   html += '<button type="button" class="add-row-btn" id="addExpenseExtraBtn" '+(exp.extra.length>=EXPENSE_EXTRA_MAX?"disabled":"")+'>＋ 支出項目を追加（'+exp.extra.length+' / '+EXPENSE_EXTRA_MAX+'）</button></div>';
 
+  html += '<div class="total-box"><span class="total-label">支出合計</span><span class="total-value" id="expenseTotalDisplay">'+formatYen(calcExpenseTotal(exp))+'</span></div>';
+
   html += '<div class="btn-row"><button class="btn btn-outline" id="step4BackBtn">戻る</button>' +
     '<button class="btn btn-primary" id="step4NextBtn">確認画面へ進む</button></div>' +
     '</section>';
 
   c.innerHTML = html;
 
-  c.querySelectorAll("[data-inc]").forEach(el=> el.addEventListener("input", ()=>{ inc[el.dataset.inc] = el.value; saveState(); }));
-  c.querySelectorAll("[data-exp]").forEach(el=> el.addEventListener("input", ()=>{ exp[el.dataset.exp] = el.value; saveState(); }));
+  function updateTotals(){
+    $("incomeTotalDisplay").textContent = formatYen(calcIncomeTotal(inc));
+    $("expenseTotalDisplay").textContent = formatYen(calcExpenseTotal(exp));
+  }
+
+  c.querySelectorAll("[data-inc]").forEach(el=> el.addEventListener("input", ()=>{ inc[el.dataset.inc] = el.value; saveState(); updateTotals(); }));
+  c.querySelectorAll("[data-exp]").forEach(el=> el.addEventListener("input", ()=>{ exp[el.dataset.exp] = el.value; saveState(); updateTotals(); }));
 
   c.querySelectorAll("[data-other-idx]").forEach(row=>{
     const idx = parseInt(row.dataset.otherIdx,10);
     row.querySelector("[data-other-role]").addEventListener("input", e=>{ inc.others[idx].role = e.target.value; saveState(); });
-    row.querySelector("[data-other-amount]").addEventListener("input", e=>{ inc.others[idx].amount = e.target.value; saveState(); });
+    row.querySelector("[data-other-amount]").addEventListener("input", e=>{ inc.others[idx].amount = e.target.value; saveState(); updateTotals(); });
   });
   c.querySelectorAll("[data-remove-other]").forEach(btn=>{
     btn.addEventListener("click", ()=>{ inc.others.splice(parseInt(btn.dataset.removeOther,10),1); saveState(); renderStep4(); });
@@ -1162,7 +1195,7 @@ function renderStep4(){
   c.querySelectorAll("[data-extra-idx]").forEach(row=>{
     const idx = parseInt(row.dataset.extraIdx,10);
     row.querySelector("[data-extra-label]").addEventListener("input", e=>{ exp.extra[idx].label = e.target.value; saveState(); });
-    row.querySelector("[data-extra-amount]").addEventListener("input", e=>{ exp.extra[idx].amount = e.target.value; saveState(); });
+    row.querySelector("[data-extra-amount]").addEventListener("input", e=>{ exp.extra[idx].amount = e.target.value; saveState(); updateTotals(); });
   });
   c.querySelectorAll("[data-remove-extra]").forEach(btn=>{
     btn.addEventListener("click", ()=>{ exp.extra.splice(parseInt(btn.dataset.removeExtra,10),1); saveState(); renderStep4(); });
@@ -1266,6 +1299,7 @@ function buildConfirmHtml(){
   html += confirmRow("配偶者の手取り収入", inc.spouseIncome ? inc.spouseIncome+" 円" : "");
   if(inc.pensionAmount) html += confirmRow("年金・手当等（月額）", inc.pensionAmount+" 円");
   inc.others.forEach(o=>{ if(o.role || o.amount) html += confirmRow("その他（"+o.role+"）", o.amount+" 円"); });
+  html += confirmRow("収入合計", formatYen(calcIncomeTotal(inc)));
   html += '</div>';
 
   html += '<div class="confirm-block"><h3>収支状況（支出）</h3>';
@@ -1273,6 +1307,7 @@ function buildConfirmHtml(){
   html += confirmRow("食費", exp.food ? exp.food+" 円" : "");
   html += confirmRow("学費", exp.tuition ? exp.tuition+" 円" : "");
   exp.extra.forEach(x=>{ if(x.label || x.amount) html += confirmRow(x.label, x.amount+" 円"); });
+  html += confirmRow("支出合計", formatYen(calcExpenseTotal(exp)));
   html += '</div>';
 
   return html;
@@ -1431,6 +1466,7 @@ function buildEmailPayload(s){
   push("配偶者の手取り収入（円）", s.income.spouseIncome);
   push("年金・手当等（月額・円）", s.income.pensionAmount);
   s.income.others.forEach(o=>{ if(o.role || o.amount) push("その他収入（"+o.role+"）", o.amount); });
+  push("収入合計", formatYen(calcIncomeTotal(s.income)));
 
   lines.push("");
   lines.push("■収支状況（支出）");
@@ -1438,6 +1474,7 @@ function buildEmailPayload(s){
   push("食費（円）", s.expense.food);
   push("学費（円）", s.expense.tuition);
   s.expense.extra.forEach(x=>{ if(x.label || x.amount) push(x.label, x.amount); });
+  push("支出合計", formatYen(calcExpenseTotal(s.expense)));
 
   return {
     _subject: "【新規相談】"+(s.basic.name||"未入力")+"様より相談フォーム送信",
