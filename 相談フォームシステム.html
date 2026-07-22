@@ -207,6 +207,30 @@
     font-weight:700;
   }
 
+  .chip-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .chip-btn{
+    border:2px solid var(--border);
+    border-radius:24px;
+    padding:9px 16px;
+    font-size:.85rem;
+    cursor:pointer;
+    background:#fbfcfe;
+    color:var(--text);
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .chip-btn:hover{ border-color:#9db4cf; }
+  .chip-btn.selected{
+    border-color:var(--navy);
+    background:var(--navy);
+    color:#fff;
+    font-weight:700;
+  }
+
   .checkbox-row{
     display:flex;
     align-items:flex-start;
@@ -557,14 +581,12 @@ const STEP3_FIELDS = [
     showIf:(d)=> d.employmentType !== "無職" }
 ];
 
-const CREDITOR_NAME_OPTIONS = [
-  "プロミス","アコム","アイフル","SMBCモビット","レイクALSA","ノーローン","フクホー","セントラル",
-  "楽天カード","三井住友カード","JCB","オリエントコーポレーション","ジャックス","セゾンカード（クレディセゾン）",
-  "エポスカード","ライフカード","アプラス","三菱UFJニコス","UCカード","ポケットカード","セディナ",
-  "イオンクレジットサービス","オリックス・クレジット",
-  "三菱UFJ銀行","三井住友銀行","みずほ銀行","ゆうちょ銀行","りそな銀行","楽天銀行","PayPay銀行",
-  "イオン銀行","スルガ銀行","SBI新生銀行","auじぶん銀行","横浜銀行","千葉銀行",
-  "日本学生支援機構","労働金庫（ろうきん）","JA（農協）"
+// カテゴリ→各社ボタンの2段階選択用データ（スマホ画面で候補が多すぎて崩れるのを防ぐため）
+const CREDITOR_NAME_CATEGORIES = [
+  { category:"消費者金融", items:["プロミス","アコム","アイフル","SMBCモビット","レイクALSA","ノーローン","フクホー","セントラル"] },
+  { category:"信販・クレジットカード", items:["楽天カード","三井住友カード","JCB","オリエントコーポレーション","ジャックス","セゾンカード（クレディセゾン）","エポスカード","ライフカード","アプラス","三菱UFJニコス","UCカード","ポケットカード","セディナ","イオンクレジットサービス","オリックス・クレジット"] },
+  { category:"銀行", items:["三菱UFJ銀行","三井住友銀行","みずほ銀行","ゆうちょ銀行","りそな銀行","楽天銀行","PayPay銀行","イオン銀行","スルガ銀行","SBI新生銀行","auじぶん銀行","横浜銀行","千葉銀行"] },
+  { category:"その他", items:["日本学生支援機構","労働金庫（ろうきん）","JA（農協）"] }
 ];
 const CREDITOR_YEARS_OPTIONS = [
   "不明","０～５カ月","６～１１カ月","１年程度","１年半程度","２年程度","３年程度","４年程度",
@@ -579,7 +601,7 @@ const CREDITOR_LAWSUIT_DOC_TYPE_OPTIONS = ["訴状","支払督促"];
    ============================================================ */
 function newCreditorDraft(){
   return {
-    name:"", loanAmount:"", years:"", overdue:"", overduePeriod:"",
+    name:"", nameCategory:"", loanAmount:"", years:"", overdue:"", overduePeriod:"",
     lawsuit:"", lawsuitDocType:"", lawsuitReceivedDate:""
   };
 }
@@ -907,11 +929,38 @@ function creditorSummaryHtml(cr, idx){
   return html;
 }
 
+// カテゴリボタン→各社ボタンの2段階選択＋自由入力欄
+function renderCreditorNameField(d){
+  let html = '<div class="form-group"><label class="field-label">債権者名</label>' +
+    '<input type="text" data-key="cd-name" value="'+esc(d.name)+'" placeholder="下のボタンから選ぶか、直接入力してください" autocomplete="off">' +
+    '<div class="field-hint">カテゴリのボタンを押すと、各社のボタンが表示されます</div>';
+
+  html += '<div class="chip-row">';
+  CREDITOR_NAME_CATEGORIES.forEach(cat=>{
+    const active = d.nameCategory === cat.category ? " selected" : "";
+    html += '<button type="button" class="chip-btn'+active+'" data-cat-btn="'+esc(cat.category)+'">'+esc(cat.category)+'</button>';
+  });
+  html += '</div>';
+
+  const activeCat = CREDITOR_NAME_CATEGORIES.find(c=> c.category === d.nameCategory);
+  if(activeCat){
+    html += '<div class="chip-row">';
+    activeCat.items.forEach(item=>{
+      const sel = d.name === item ? " selected" : "";
+      html += '<button type="button" class="chip-btn'+sel+'" data-company-btn="'+esc(item)+'">'+esc(item)+'</button>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="field-error" id="err-cd-name"></div></div>';
+  return html;
+}
+
 function renderCreditorDraftForm(){
   const d = state.creditorDraft;
   let html = '<h3 class="section-sub">債権者情報を入力</h3>';
   html += '<p class="field-hint">複数の業者からお借入れがある場合は、1社ずつご入力ください。「この債権者を追加する」を押すと、続けて次の債権者を入力できます。</p>';
-  html += keyedComboHtml("cd-name","債権者名",CREDITOR_NAME_OPTIONS,d.name,false,"候補から選択、または直接入力");
+  html += renderCreditorNameField(d);
   html += keyedTextHtml("cd-loanAmount","借入額（万円）",d.loanAmount,false,"number","例）50");
   html += keyedComboHtml("cd-years","取引年数",CREDITOR_YEARS_OPTIONS,d.years,false,"候補から選択、または直接入力");
   html += keyedRadioHtml("cd-overdue","延滞中かどうか",["あり","なし"],d.overdue,false);
@@ -931,6 +980,23 @@ function renderCreditorDraftForm(){
 
 function bindCreditorDraftForm(container){
   bindKeyedForm(container, "cd-", state.creditorDraft, renderStep2);
+
+  container.querySelectorAll("[data-cat-btn]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const cat = btn.dataset.catBtn;
+      state.creditorDraft.nameCategory = (state.creditorDraft.nameCategory === cat) ? "" : cat;
+      saveState();
+      renderStep2();
+    });
+  });
+  container.querySelectorAll("[data-company-btn]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.creditorDraft.name = btn.dataset.companyBtn;
+      state.creditorDraft.nameCategory = "";
+      saveState();
+      renderStep2();
+    });
+  });
 }
 
 function validateCreditorDraft(container){
@@ -1016,7 +1082,7 @@ function renderStep2List(){
   if(!state.creditorsSkipped){
     html += '<div class="skip-box">' + skipIconSvg +
       '<p>すでにLINEやメールでこちらに詳細を届出頂いている場合は、こちらのボタンでスキップしていただいて結構です。</p>' +
-      '<button type="button" class="btn btn-outline" id="skipCreditorBtn">届出済みのため入力をスキップする</button></div>';
+      '<button type="button" class="btn btn-outline" id="skipCreditorBtn">借り入れ内容を既に届出済みの方は、こちらのボタンでスキップできます。</button></div>';
   } else {
     html += '<div class="skip-box">' + skipIconSvg +
       '<p>「届出済み」としてスキップ中です</p>' +
