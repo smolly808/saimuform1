@@ -558,11 +558,18 @@ const STEP3_FIELDS = [
 ];
 
 const CREDITOR_NAME_OPTIONS = [
-  "プロミス","アコム","アイフル","SMBCモビット","レイクALSA","楽天カード","三井住友カード",
-  "JCB","オリエントコーポレーション","ジャックス","三菱UFJ銀行","三井住友銀行","みずほ銀行",
-  "ゆうちょ銀行","日本学生支援機構","その他"
+  "プロミス","アコム","アイフル","SMBCモビット","レイクALSA","ノーローン","フクホー","セントラル",
+  "楽天カード","三井住友カード","JCB","オリエントコーポレーション","ジャックス","セゾンカード（クレディセゾン）",
+  "エポスカード","ライフカード","アプラス","三菱UFJニコス","UCカード","ポケットカード","セディナ",
+  "イオンクレジットサービス","オリックス・クレジット",
+  "三菱UFJ銀行","三井住友銀行","みずほ銀行","ゆうちょ銀行","りそな銀行","楽天銀行","PayPay銀行",
+  "イオン銀行","スルガ銀行","SBI新生銀行","auじぶん銀行","横浜銀行","千葉銀行",
+  "日本学生支援機構","労働金庫（ろうきん）","JA（農協）"
 ];
-const CREDITOR_YEARS_OPTIONS = ["不明","6か月未満","1年未満","1年","1年半","2年","3年","4年以上"];
+const CREDITOR_YEARS_OPTIONS = [
+  "不明","０～５カ月","６～１１カ月","１年程度","１年半程度","２年程度","３年程度","４年程度",
+  "５～１０年","１０～２０年","２０年以上"
+];
 const CREDITOR_OVERDUE_PERIOD_OPTIONS = ["1～2ヶ月","3ヶ月以上","半年以上","1年以上","5年以上"];
 const CREDITOR_LAWSUIT_OPTIONS = ["なし","過去に裁判になった","現在裁判所から書類が届いている"];
 const CREDITOR_LAWSUIT_DOC_TYPE_OPTIONS = ["訴状","支払督促"];
@@ -572,7 +579,7 @@ const CREDITOR_LAWSUIT_DOC_TYPE_OPTIONS = ["訴状","支払督促"];
    ============================================================ */
 function newCreditorDraft(){
   return {
-    name:"", nameOther:"", loanAmount:"", years:"", overdue:"", overduePeriod:"",
+    name:"", loanAmount:"", years:"", overdue:"", overduePeriod:"",
     lawsuit:"", lawsuitDocType:"", lawsuitReceivedDate:""
   };
 }
@@ -813,6 +820,15 @@ function keyedSelectHtml(fieldKey, label, options, val, required){
     options.map(o=>'<option value="'+esc(o)+'" '+(val===o?"selected":"")+'>'+esc(o)+'</option>').join("") +
     '</select><div class="field-error" id="err-'+fieldKey+'"></div></div>';
 }
+// 候補一覧を表示しつつ、自由入力も可能なコンボ欄（datalist使用）
+function keyedComboHtml(fieldKey, label, options, val, required, placeholder){
+  const reqMark = required ? '<span class="req">必須</span>' : "";
+  const listId = "dl-"+fieldKey;
+  return '<div class="form-group"><label class="field-label">'+esc(label)+reqMark+'</label>' +
+    '<input type="text" data-key="'+fieldKey+'" value="'+esc(val)+'" list="'+listId+'" placeholder="'+esc(placeholder||"")+'" autocomplete="off">' +
+    '<datalist id="'+listId+'">' + options.map(o=>'<option value="'+esc(o)+'">').join("") + '</datalist>' +
+    '<div class="field-error" id="err-'+fieldKey+'"></div></div>';
+}
 function keyedTextHtml(fieldKey, label, val, required, type, placeholder){
   const reqMark = required ? '<span class="req">必須</span>' : "";
   return '<div class="form-group"><label class="field-label">'+esc(label)+reqMark+'</label>' +
@@ -877,7 +893,7 @@ function validateKeyedFields(container, prefix, dataObj, rules){
 }
 
 function creditorSummaryHtml(cr, idx){
-  const name = cr.name === "その他" ? (cr.nameOther || "その他") : cr.name;
+  const name = cr.name;
   let html = '<div class="creditor-card" data-idx="'+idx+'">' +
     '<div class="creditor-head"><span class="creditor-name">'+(idx+1)+'. '+esc(name)+'</span>' +
     '<button type="button" class="btn-danger-outline" data-remove-creditor="'+idx+'">削除</button></div>' +
@@ -893,15 +909,11 @@ function creditorSummaryHtml(cr, idx){
 
 function renderCreditorDraftForm(){
   const d = state.creditorDraft;
-  const nameIsOther = d.name === "その他";
   let html = '<h3 class="section-sub">債権者情報を入力</h3>';
   html += '<p class="field-hint">複数の業者からお借入れがある場合は、1社ずつご入力ください。「この債権者を追加する」を押すと、続けて次の債権者を入力できます。</p>';
-  html += keyedSelectHtml("cd-name","債権者名",CREDITOR_NAME_OPTIONS,d.name,false);
-  if(nameIsOther){
-    html += keyedTextHtml("cd-nameOther","債権者名（自由入力）",d.nameOther,false,"text","例）〇〇信用金庫");
-  }
+  html += keyedComboHtml("cd-name","債権者名",CREDITOR_NAME_OPTIONS,d.name,false,"候補から選択、または直接入力");
   html += keyedTextHtml("cd-loanAmount","借入額（万円）",d.loanAmount,false,"number","例）50");
-  html += keyedSelectHtml("cd-years","取引年数",CREDITOR_YEARS_OPTIONS,d.years,false);
+  html += keyedComboHtml("cd-years","取引年数",CREDITOR_YEARS_OPTIONS,d.years,false,"候補から選択、または直接入力");
   html += keyedRadioHtml("cd-overdue","延滞中かどうか",["あり","なし"],d.overdue,false);
   if(d.overdue === "あり"){
     html += keyedSelectHtml("cd-overduePeriod","延滞期間（最後の返済日から）",CREDITOR_OVERDUE_PERIOD_OPTIONS,d.overduePeriod,false);
@@ -924,7 +936,6 @@ function bindCreditorDraftForm(container){
 function validateCreditorDraft(container){
   return validateKeyedFields(container, "cd-", state.creditorDraft, [
     { key:"name", required:false },
-    { key:"nameOther", required:false, when:d=> d.name === "その他" },
     { key:"loanAmount", required:false },
     { key:"years", required:false },
     { key:"overdue", required:false },
@@ -1248,7 +1259,7 @@ function buildConfirmHtml(){
     html += confirmRow("状況", "未入力");
   } else {
     state.creditors.forEach((cr,idx)=>{
-      const name = cr.name === "その他" ? cr.nameOther : cr.name;
+      const name = cr.name;
       html += confirmRow((idx+1)+". 債権者名", name);
       html += confirmRow("借入額", cr.loanAmount+" 万円");
       html += confirmRow("取引年数", cr.years);
@@ -1425,7 +1436,7 @@ function buildEmailPayload(s){
     lines.push("未入力");
   } else {
     s.creditors.forEach((cr,idx)=>{
-      const name = cr.name === "その他" ? cr.nameOther : cr.name;
+      const name = cr.name;
       const overdueDetail = cr.overdue === "あり" && cr.overduePeriod ? "("+cr.overduePeriod+")" : "";
       let lawsuitDetail = cr.lawsuit;
       if(cr.lawsuit === "現在裁判所から書類が届いている"){
