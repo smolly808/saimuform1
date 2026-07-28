@@ -583,9 +583,10 @@ const STEP3_FIELDS = [
 
 // カテゴリ→各社ボタンの2段階選択用データ（スマホ画面で候補が多すぎて崩れるのを防ぐため）
 const CREDITOR_NAME_CATEGORIES = [
-  { category:"消費者金融", items:["プロミス","アコム","アイフル","SMBCモビット","レイクALSA","ノーローン","フクホー","セントラル"] },
-  { category:"信販・クレジットカード", items:["楽天カード","三井住友カード","JCB","オリエントコーポレーション","ジャックス","セゾンカード（クレディセゾン）","エポスカード","ライフカード","アプラス","三菱UFJニコス","UCカード","ポケットカード","セディナ","イオンクレジットサービス","オリックス・クレジット"] },
+  { category:"消費者金融", items:["プロミス","アコム","アイフル","SMBCモビット","レイクALSA","ノーローン","セントラル"] },
+  { category:"信販・クレジットカード", items:["楽天カード","三井住友カード","JCB","オリエントコーポレーション","ジャックス","セゾンカード（クレディセゾン）","エポスカード","ライフカード","アプラス","三菱UFJニコス","UCカード","ポケットカード","セディナ","イオンクレジットサービス","オリックス・クレジット","出光クレジット","トヨタファイナンス","ＮＴＴファイナンス"] },
   { category:"銀行", items:["三菱UFJ銀行","三井住友銀行","みずほ銀行","ゆうちょ銀行","りそな銀行","楽天銀行","PayPay銀行","イオン銀行","スルガ銀行","SBI新生銀行","auじぶん銀行","横浜銀行","千葉銀行"] },
+  { category:"債権回収会社", items:["アビリオ債権回収","パルティール債権回収","エム・ユー・フロンティア債権回収","ニッテレ債権回収","SMBC債権回収","みずほ債権回収","オリックス債権回収","ジャックス債権回収サービス","セゾン債権回収","日本債権回収"] },
   { category:"その他", items:["日本学生支援機構","労働金庫（ろうきん）","JA（農協）"] }
 ];
 const CREDITOR_YEARS_OPTIONS = [
@@ -842,15 +843,6 @@ function keyedSelectHtml(fieldKey, label, options, val, required){
     options.map(o=>'<option value="'+esc(o)+'" '+(val===o?"selected":"")+'>'+esc(o)+'</option>').join("") +
     '</select><div class="field-error" id="err-'+fieldKey+'"></div></div>';
 }
-// 候補一覧を表示しつつ、自由入力も可能なコンボ欄（datalist使用）
-function keyedComboHtml(fieldKey, label, options, val, required, placeholder){
-  const reqMark = required ? '<span class="req">必須</span>' : "";
-  const listId = "dl-"+fieldKey;
-  return '<div class="form-group"><label class="field-label">'+esc(label)+reqMark+'</label>' +
-    '<input type="text" data-key="'+fieldKey+'" value="'+esc(val)+'" list="'+listId+'" placeholder="'+esc(placeholder||"")+'" autocomplete="off">' +
-    '<datalist id="'+listId+'">' + options.map(o=>'<option value="'+esc(o)+'">').join("") + '</datalist>' +
-    '<div class="field-error" id="err-'+fieldKey+'"></div></div>';
-}
 function keyedTextHtml(fieldKey, label, val, required, type, placeholder){
   const reqMark = required ? '<span class="req">必須</span>' : "";
   return '<div class="form-group"><label class="field-label">'+esc(label)+reqMark+'</label>' +
@@ -956,13 +948,29 @@ function renderCreditorNameField(d){
   return html;
 }
 
+// 取引年数：候補ボタン＋自由入力欄
+function renderCreditorYearsField(d){
+  let html = '<div class="form-group"><label class="field-label">取引年数</label>' +
+    '<input type="text" data-key="cd-years" value="'+esc(d.years)+'" placeholder="下のボタンから選ぶか、直接入力してください" autocomplete="off">';
+
+  html += '<div class="chip-row">';
+  CREDITOR_YEARS_OPTIONS.forEach(opt=>{
+    const sel = d.years === opt ? " selected" : "";
+    html += '<button type="button" class="chip-btn'+sel+'" data-years-btn="'+esc(opt)+'">'+esc(opt)+'</button>';
+  });
+  html += '</div>';
+
+  html += '<div class="field-error" id="err-cd-years"></div></div>';
+  return html;
+}
+
 function renderCreditorDraftForm(){
   const d = state.creditorDraft;
   let html = '<h3 class="section-sub">債権者情報を入力</h3>';
   html += '<p class="field-hint">複数の業者からお借入れがある場合は、1社ずつご入力ください。「この債権者を追加する」を押すと、続けて次の債権者を入力できます。</p>';
   html += renderCreditorNameField(d);
   html += keyedTextHtml("cd-loanAmount","借入額（万円）",d.loanAmount,false,"number","例）50");
-  html += keyedComboHtml("cd-years","取引年数",CREDITOR_YEARS_OPTIONS,d.years,false,"候補から選択、または直接入力");
+  html += renderCreditorYearsField(d);
   html += keyedRadioHtml("cd-overdue","延滞中かどうか",["あり","なし"],d.overdue,false);
   if(d.overdue === "あり"){
     html += keyedSelectHtml("cd-overduePeriod","延滞期間（最後の返済日から）",CREDITOR_OVERDUE_PERIOD_OPTIONS,d.overduePeriod,false);
@@ -993,6 +1001,13 @@ function bindCreditorDraftForm(container){
     btn.addEventListener("click", ()=>{
       state.creditorDraft.name = btn.dataset.companyBtn;
       state.creditorDraft.nameCategory = "";
+      saveState();
+      renderStep2();
+    });
+  });
+  container.querySelectorAll("[data-years-btn]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.creditorDraft.years = btn.dataset.yearsBtn;
       saveState();
       renderStep2();
     });
