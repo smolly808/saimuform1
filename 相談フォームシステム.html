@@ -602,7 +602,7 @@ const CREDITOR_LAWSUIT_DOC_TYPE_OPTIONS = ["訴状","支払督促"];
    ============================================================ */
 function newCreditorDraft(){
   return {
-    name:"", nameCategory:"", loanAmount:"", years:"", overdue:"", overduePeriod:"",
+    name:"", nameCategory:"", loanAmount:"", monthlyRepayment:"", years:"", overdue:"", overduePeriod:"",
     lawsuit:"", lawsuitDocType:"", lawsuitReceivedDate:""
   };
 }
@@ -911,7 +911,7 @@ function creditorSummaryHtml(cr, idx){
   let html = '<div class="creditor-card" data-idx="'+idx+'">' +
     '<div class="creditor-head"><span class="creditor-name">'+(idx+1)+'. '+esc(name)+'</span>' +
     '<button type="button" class="btn-danger-outline" data-remove-creditor="'+idx+'">削除</button></div>' +
-    '<div class="creditor-detail"><span class="k">借入額：</span>'+esc(cr.loanAmount)+' 万円　<span class="k">取引年数：</span>'+esc(cr.years)+'</div>' +
+    '<div class="creditor-detail"><span class="k">借入額：</span>'+esc(cr.loanAmount)+' 万円　<span class="k">月々の返済額：</span>'+esc(cr.monthlyRepayment)+' 円　<span class="k">取引年数：</span>'+esc(cr.years)+'</div>' +
     '<div class="creditor-detail"><span class="k">延滞中：</span>'+esc(cr.overdue)+(cr.overdue==="あり" && cr.overduePeriod?"（"+esc(cr.overduePeriod)+"）":"")+'</div>' +
     '<div class="creditor-detail"><span class="k">訴訟：</span>'+esc(cr.lawsuit)+'</div>';
   if(cr.lawsuit === "現在裁判所から書類が届いている"){
@@ -970,6 +970,7 @@ function renderCreditorDraftForm(){
   html += '<p class="field-hint">複数の業者からお借入れがある場合は、1社ずつご入力ください。「この債権者を追加する」を押すと、続けて次の債権者を入力できます。</p>';
   html += renderCreditorNameField(d);
   html += keyedTextHtml("cd-loanAmount","借入額（万円）",d.loanAmount,false,"number","例）50");
+  html += keyedTextHtml("cd-monthlyRepayment","月々の返済額（円）",d.monthlyRepayment,false,"number","例）10000");
   html += renderCreditorYearsField(d);
   html += keyedRadioHtml("cd-overdue","延滞中かどうか",["あり","なし"],d.overdue,false);
   if(d.overdue === "あり"){
@@ -1018,6 +1019,7 @@ function validateCreditorDraft(container){
   return validateKeyedFields(container, "cd-", state.creditorDraft, [
     { key:"name", required:false },
     { key:"loanAmount", required:false },
+    { key:"monthlyRepayment", required:false },
     { key:"years", required:false },
     { key:"overdue", required:false },
     { key:"overduePeriod", required:false, when:d=> d.overdue === "あり" },
@@ -1343,6 +1345,7 @@ function buildConfirmHtml(){
       const name = cr.name;
       html += confirmRow((idx+1)+". 債権者名", name);
       html += confirmRow("借入額", cr.loanAmount+" 万円");
+      html += confirmRow("月々の返済額", cr.monthlyRepayment+" 円");
       html += confirmRow("取引年数", cr.years);
       html += confirmRow("延滞中", cr.overdue);
       if(cr.overdue === "あり"){
@@ -1523,7 +1526,7 @@ function buildEmailPayload(s){
       if(cr.lawsuit === "現在裁判所から書類が届いている"){
         lawsuitDetail += "(書類:"+cr.lawsuitDocType+" ／ 受取日:"+cr.lawsuitReceivedDate+")";
       }
-      lines.push("["+(idx+1)+"] "+name+" ／ 借入額:"+cr.loanAmount+"万円 ／ 取引年数:"+cr.years+" ／ 延滞:"+cr.overdue+overdueDetail+" ／ 裁判:"+lawsuitDetail);
+      lines.push("["+(idx+1)+"] "+name+" ／ 借入額:"+cr.loanAmount+"万円 ／ 返済額:"+cr.monthlyRepayment+"円 ／ 取引年数:"+cr.years+" ／ 延滞:"+cr.overdue+overdueDetail+" ／ 裁判:"+lawsuitDetail);
     });
   }
 
